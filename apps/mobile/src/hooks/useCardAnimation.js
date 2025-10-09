@@ -1,0 +1,63 @@
+import { useState } from "react";
+import {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  interpolate,
+  runOnJS,
+} from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
+
+export function useCardAnimation() {
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [currentAsk, setCurrentAsk] = useState(null);
+  const flipRotation = useSharedValue(0);
+
+  const handleFlipToAsk = (ask) => {
+    setCurrentAsk(ask);
+    flipRotation.value = withTiming(180, { duration: 600 }, () => {
+      runOnJS(setIsFlipped)(true);
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const handleFlipToFront = () => {
+    flipRotation.value = withTiming(0, { duration: 600 }, () => {
+      runOnJS(setIsFlipped)(false);
+      runOnJS(setCurrentAsk)(null);
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const frontAnimatedStyle = useAnimatedStyle(() => {
+    const rotateY = interpolate(flipRotation.value, [0, 180], [0, 180]);
+    const opacity = interpolate(flipRotation.value, [0, 90, 180], [1, 0, 0]);
+
+    return {
+      transform: [{ rotateY: `${rotateY}deg` }],
+      opacity,
+      backfaceVisibility: "hidden",
+    };
+  });
+
+  const backAnimatedStyle = useAnimatedStyle(() => {
+    const rotateY = interpolate(flipRotation.value, [0, 180], [180, 0]);
+    const opacity = interpolate(flipRotation.value, [0, 90, 180], [0, 0, 1]);
+
+    return {
+      transform: [{ rotateY: `${rotateY}deg` }],
+      opacity,
+      backfaceVisibility: "hidden",
+    };
+  });
+
+  return {
+    isFlipped,
+    currentAsk,
+    handleFlipToAsk,
+    handleFlipToFront,
+    frontAnimatedStyle,
+    backAnimatedStyle,
+    flipRotation, // Exporting for use in dependencies
+  };
+}
