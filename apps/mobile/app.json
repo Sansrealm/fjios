@@ -50,6 +50,7 @@
         }
       ],
       "expo-audio",
+      "expo-calendar",
       [
         "expo-build-properties",
         {
