@@ -8,12 +8,18 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "deploymentTarget": "13.4",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCalendarsUsageDescription": "This app needs calendar access to schedule events and reminders for your connections.",
         "NSContactsUsageDescription": "We need access to your contacts to help you find and connect with people you know on the platform.",
         "NSCameraUsageDescription": "This app needs camera access to let you record your profile video and capture video for your asks.",
-        "NSRemindersUsageDescription": "This app needs access to your reminders to help schedule events and set notifications."
+        "NSMicrophoneUsageDescription": "This app needs microphone access to record audio for your profile videos and video asks.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select videos for your profile and asks.",
+        "NSPhotoLibraryAddUsageDescription": "This app needs permission to save videos to your photo library.",
+        "NSLocationWhenInUseUsageDescription": "This app needs your location to auto-fill your city and state on your digital card, making it easier for others to connect with you locally.",
+        "NSRemindersUsageDescription": "This app needs access to your reminders to help schedule events and set notifications.",
+        "NSUserNotificationsUsageDescription": "This app needs permission to send you notifications about messages and connection requests."
       },
       "bundleIdentifier": "com.founderjourneys.digicards"
     },
