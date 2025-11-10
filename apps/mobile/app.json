@@ -12,7 +12,8 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSCalendarsUsageDescription": "This app needs calendar access to schedule events and reminders for your connections.",
         "NSContactsUsageDescription": "We need access to your contacts to help you find and connect with people you know on the platform.",
-        "NSCameraUsageDescription": "This app needs camera access to let you record your profile video and capture video for your asks."
+        "NSCameraUsageDescription": "This app needs camera access to let you record your profile video and capture video for your asks.",
+        "NSRemindersUsageDescription": "This app needs access to your reminders to help schedule events and set notifications."
       },
       "bundleIdentifier": "com.founderjourneys.digicards"
     },
