@@ -34,8 +34,20 @@ for (const method of ['log', 'info', 'warn', 'error', 'debug'] as const) {
   };
 }
 
+/**
+ * Cleans a database connection string by removing shell command artifacts
+ * (e.g., removes "psql '" prefix and trailing "'")
+ */
+function cleanConnectionString(connectionString: string | undefined): string | undefined {
+  if (!connectionString) return connectionString;
+  return connectionString
+    .trim()
+    .replace(/^psql\s+['"]?/, '') // Remove "psql '" or "psql " prefix
+    .replace(/['"]$/, ''); // Remove trailing quote
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: cleanConnectionString(process.env.DATABASE_URL),
 });
 const adapter = NeonAdapter(pool);
 

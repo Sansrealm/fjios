@@ -8,6 +8,9 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+caches/
+ios/
+android/
 
 # Native
 *.orig.*
@@ -24,6 +27,8 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+yarn.lock
+package-lock.json
 
 # macOS
 .DS_Store
@@ -31,6 +36,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+
 
 # typescript
 *.tsbuildinfo
