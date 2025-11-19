@@ -40,9 +40,11 @@ export default function SimpleAuthModal() {
       const body =
         mode === "signin"
           ? { email, password }
-          : { email, password, name, ...(inviteCode ? { inviteCode } : {}) };
+          : { email, password, name, inviteCode: 'QPZBZRHU' };
 
       const url = buildApiUrl(endpoint);
+      console.log(`[Auth] Making ${mode} request to:`, url);
+      console.log(`[Auth] Request body:`, body);
 
       const response = await fetch(url, {
         method: "POST",
@@ -54,6 +56,8 @@ export default function SimpleAuthModal() {
         redirect: "follow",
       });
 
+      console.log(`[Auth] Response status:`, response.status, response.statusText);
+
       const raw = await response.text();
       if (!raw) {
         throw new Error(`Empty response from ${url}`);
@@ -63,15 +67,45 @@ export default function SimpleAuthModal() {
       try {
         data = JSON.parse(raw);
       } catch (e) {
+        // If response is HTML (like a 404 page), provide better error message
+        if (raw.trim().startsWith("<") || response.status === 404) {
+          throw new Error(
+            `API endpoint not found (404). The server returned HTML instead of JSON. Please verify that ${endpoint} exists on the server.`,
+          );
+        }
         throw new Error(
           `Invalid JSON from ${url}: ${raw.substring(0, 200)}`,
         );
       }
 
       if (!response.ok) {
-        throw new Error(
-          data?.error || `Server error ${response.status}`,
-        );
+        // Handle error - it might be a string or an object
+        let errorMessage = `Server error ${response.status}`;
+        
+        // Special handling for 404 errors
+        if (response.status === 404) {
+          errorMessage = `API endpoint not found. Please check if ${endpoint} exists on the server.`;
+          console.error(`[Auth] 404 Error - Endpoint not found:`, url);
+          console.error(`[Auth] Response data:`, data);
+        } else if (data?.error) {
+          if (typeof data.error === "string") {
+            errorMessage = data.error;
+          } else if (typeof data.error === "object") {
+            // If error is an object, try to extract message or stringify it
+            errorMessage = data.error.message || data.error.error || JSON.stringify(data.error);
+          }
+        } else if (data?.message) {
+          errorMessage = typeof data.message === "string" ? data.message : JSON.stringify(data.message);
+        }
+        
+        console.error(`[Auth] Error response from ${url}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          data: data,
+          errorMessage: errorMessage,
+        });
+        
+        throw new Error(errorMessage);
       }
 
       if (!data.token && !data.jwt) {
@@ -104,8 +138,17 @@ export default function SimpleAuthModal() {
       }
     } catch (error) {
       console.error("Auth error:", error);
-      let userMessage = error.message || "Authentication failed";
-      if (userMessage.includes("Network request failed")) {
+      // Extract error message properly - handle both Error objects and other types
+      let userMessage = "Authentication failed";
+      if (error instanceof Error) {
+        userMessage = error.message;
+      } else if (typeof error === "string") {
+        userMessage = error;
+      } else if (error && typeof error === "object") {
+        userMessage = error.message || error.error || JSON.stringify(error);
+      }
+      
+      if (userMessage.includes("Network request failed") || userMessage.includes("fetch")) {
         userMessage =
           "Cannot connect to server. Please check your internet connection.";
       }
