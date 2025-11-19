@@ -32,6 +32,9 @@ export default defineConfig({
     ],
   },
   logLevel: 'info',
+  build: {
+    target: 'esnext',
+  },
   plugins: [
     nextPublicProcessEnv(),
     restartEnvFileChange(),
@@ -78,6 +81,12 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
   },
   clearScreen: false,
+  esbuild: {
+    target: 'esnext',
+  },
+  ssr: {
+    target: 'node20',
+  },
   server: {
     allowedHosts: true,
     host: '0.0.0.0',
