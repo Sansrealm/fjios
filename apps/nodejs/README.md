@@ -173,6 +173,17 @@ The mobile app sends JWT tokens in the `Authorization: Bearer <token>` header. T
 
 See `MOBILE_CONFIG.md` for detailed mobile setup instructions.
 
+## Vercel Deployment
+
+The project is configured for Vercel deployment with `vercel.json`. 
+
+**Important:** When deploying to Vercel:
+1. Set the **Root Directory** to `apps/nodejs` in Vercel project settings
+2. Add all environment variables in Vercel dashboard
+3. The `vercel.json` file prevents Vercel from auto-detecting it as a Remix app
+
+See `VERCEL_DEPLOY.md` for detailed deployment instructions.
+
 ## Notes
 
 - All routes maintain the same API structure as the original Vite/React Router implementation
@@ -180,4 +191,5 @@ See `MOBILE_CONFIG.md` for detailed mobile setup instructions.
 - Database queries use parameterized statements to prevent SQL injection
 - Error handling is centralized in the Express error middleware
 - CORS is configured to allow mobile app connections in development
+- Server runs as a serverless function on Vercel (not a traditional server)
 

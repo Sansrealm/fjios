@@ -1,0 +1,10 @@
+node_modules
+.env
+.env.local
+*.log
+.DS_Store
+scripts/
+ENV_SETUP.md
+MOBILE_CONFIG.md
+README.md
+
