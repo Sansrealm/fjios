@@ -8,16 +8,22 @@
             "developmentClient": true,
             "distribution": "internal",
             "env": {
-                "EXPO_PUBLIC_BASE_URL": "http://localhost:3000"
+                "EXPO_PUBLIC_BASE_URL": "https://fjios.vercel.app/",
+                "EXPO_PUBLIC_HOST": "https://fjios.vercel.app/"
             }
         },
         "preview": {
-            "distribution": "internal"
+            "distribution": "internal",
+            "env": {
+                "EXPO_PUBLIC_BASE_URL": "https://fjios.vercel.app/",
+                "EXPO_PUBLIC_HOST": "https://fjios.vercel.app"
+            }
         },
         "production": {
             "autoIncrement": true,
             "env": {
-                "EXPO_PUBLIC_BASE_URL": "https://fjios.vercel.app/"
+                "EXPO_PUBLIC_BASE_URL": "https://fjios.vercel.app/",
+                "EXPO_PUBLIC_HOST": "https://fjios.vercel.app"
             }
         }
     },

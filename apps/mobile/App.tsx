@@ -8,26 +8,45 @@ import { Toaster } from 'sonner-native';
 import { AlertModal } from './polyfills/web/alerts.web';
 import './global.css';
 
+// Type declarations for web-only APIs (only available in web environment)
+declare const window: (typeof globalThis & { 
+  addEventListener?: (type: string, handler: (event: any) => void) => void;
+  removeEventListener?: (type: string, handler: (event: any) => void) => void;
+  parent?: any;
+  postMessage?: (message: any, targetOrigin: string) => void;
+  innerWidth?: number;
+  innerHeight?: number;
+}) | undefined;
+
 const GlobalErrorReporter = () => {
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    // Only run in web environment, not native
+    if (typeof window === 'undefined' || !window.addEventListener) {
       return;
     }
-    const errorHandler = (event: ErrorEvent) => {
-      if (typeof event.preventDefault === 'function') event.preventDefault();
-      console.error(event.error);
-    };
-    // unhandled promises happen all the time, so we just log them
-    const unhandledRejectionHandler = (event: PromiseRejectionEvent) => {
-      if (typeof event.preventDefault === 'function') event.preventDefault();
-      console.error('Unhandled promise rejection:', event.reason);
-    };
-    window.addEventListener('error', errorHandler);
-    window.addEventListener('unhandledrejection', unhandledRejectionHandler);
-    return () => {
-      window.removeEventListener('error', errorHandler);
-      window.removeEventListener('unhandledrejection', unhandledRejectionHandler);
-    };
+    try {
+      const errorHandler = (event: any) => {
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        console.error(event.error);
+      };
+      // unhandled promises happen all the time, so we just log them
+      const unhandledRejectionHandler = (event: any) => {
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        console.error('Unhandled promise rejection:', event.reason);
+      };
+      if (window?.addEventListener) {
+        window.addEventListener('error', errorHandler);
+        window.addEventListener('unhandledrejection', unhandledRejectionHandler);
+      }
+      return () => {
+        if (window?.removeEventListener) {
+          window.removeEventListener('error', errorHandler);
+          window.removeEventListener('unhandledrejection', unhandledRejectionHandler);
+        }
+      };
+    } catch (error) {
+      console.error('Error setting up global error reporter:', error);
+    }
   }, []);
   return null;
 };
@@ -41,8 +60,8 @@ const Wrapper = memo(() => {
           frame: {
             x: 0,
             y: 0,
-            width: typeof window === 'undefined' ? 390 : window.innerWidth,
-            height: typeof window === 'undefined' ? 844 : window.innerHeight,
+            width: typeof window === 'undefined' ? 390 : (window?.innerWidth ?? 390),
+            height: typeof window === 'undefined' ? 844 : (window?.innerHeight ?? 844),
           },
         }}
       >
@@ -60,18 +79,32 @@ const healthyResponse = {
 
 const useHandshakeParent = () => {
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'sandbox:mobile:healthcheck') {
+    // Only run in web environment, not native
+    if (typeof window === 'undefined' || !window.parent || !window.addEventListener) {
+      return;
+    }
+    try {
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data.type === 'sandbox:mobile:healthcheck') {
+          window.parent.postMessage(healthyResponse, '*');
+        }
+      };
+      if (window?.addEventListener) {
+        window.addEventListener('message', handleMessage);
+      }
+      // Immediately respond to the parent window with a healthy response in
+      // case we missed the healthcheck message
+      if (window?.parent?.postMessage) {
         window.parent.postMessage(healthyResponse, '*');
       }
-    };
-    window.addEventListener('message', handleMessage);
-    // Immediately respond to the parent window with a healthy response in
-    // case we missed the healthcheck message
-    window.parent.postMessage(healthyResponse, '*');
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
+      return () => {
+        if (window?.removeEventListener) {
+          window.removeEventListener('message', handleMessage);
+        }
+      };
+    } catch (error) {
+      console.error('Error setting up handshake:', error);
+    }
   }, []);
 };
 
@@ -81,27 +114,51 @@ const CreateApp = () => {
   useHandshakeParent();
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'sandbox:navigation' && event.data.pathname !== pathname) {
-        router.push(event.data.pathname);
-      }
-    };
+    // Only run in web environment, not native
+    if (typeof window === 'undefined' || !window.parent || !window.addEventListener) {
+      return;
+    }
+    try {
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data.type === 'sandbox:navigation' && event.data.pathname !== pathname) {
+          router.push(event.data.pathname);
+        }
+      };
 
-    window.addEventListener('message', handleMessage);
-    window.parent.postMessage({ type: 'sandbox:mobile:ready' }, '*');
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
+      if (window?.addEventListener) {
+        window.addEventListener('message', handleMessage);
+      }
+      if (window?.parent?.postMessage) {
+        window.parent.postMessage({ type: 'sandbox:mobile:ready' }, '*');
+      }
+      return () => {
+        if (window?.removeEventListener) {
+          window.removeEventListener('message', handleMessage);
+        }
+      };
+    } catch (error) {
+      console.error('Error setting up navigation listener:', error);
+    }
   }, [router, pathname]);
 
   useEffect(() => {
-    window.parent.postMessage(
-      {
-        type: 'sandbox:mobile:navigation',
-        pathname,
-      },
-      '*'
-    );
+    // Only run in web environment, not native
+    if (typeof window === 'undefined' || !window.parent) {
+      return;
+    }
+    try {
+      if (window?.parent?.postMessage) {
+        window.parent.postMessage(
+          {
+            type: 'sandbox:mobile:navigation',
+            pathname,
+          },
+          '*'
+        );
+      }
+    } catch (error) {
+      console.error('Error posting navigation message:', error);
+    }
   }, [pathname]);
 
   return (

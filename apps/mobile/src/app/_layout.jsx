@@ -23,12 +23,20 @@ export default function RootLayout() {
   const { initiate, isReady } = useAuth();
 
   useEffect(() => {
-    initiate();
+    try {
+      initiate();
+    } catch (error) {
+      console.error('Error initializing auth:', error);
+      // Still hide splash screen even if auth init fails
+      SplashScreen.hideAsync().catch(() => {});
+    }
   }, [initiate]);
 
   useEffect(() => {
     if (isReady) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch((error) => {
+        console.error('Error hiding splash screen:', error);
+      });
     }
   }, [isReady]);
 

@@ -60,6 +60,14 @@ export default function Index() {
           // After signup, check if user has a card
           if (isAuthenticated && auth?.jwt) {
             try {
+              // Check if environment is configured before making API call
+              const baseUrl = process.env.EXPO_PUBLIC_BASE_URL || process.env.EXPO_PUBLIC_PROXY_BASE_URL;
+              if (!baseUrl) {
+                console.warn('⚠️ API URL not configured, skipping card check');
+                router.replace("/(tabs)/cards");
+                return;
+              }
+
               const url = buildApiUrl(`/api/cards?userId=${auth.user?.id}`);
               const response = await fetch(url, {
                 headers: {
@@ -81,6 +89,7 @@ export default function Index() {
                 router.replace("/(tabs)/cards");
               }
             } catch (error) {
+              console.error('Error checking user cards:', error);
               // If check fails, default to cards tab
               router.replace("/(tabs)/cards");
             }

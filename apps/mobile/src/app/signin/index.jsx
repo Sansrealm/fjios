@@ -42,18 +42,24 @@ export default function SignInScreen() {
 
       if (bases.length === 0) {
         throw new Error(
-          "Server URL not configured. Please set EXPO_PUBLIC_PROXY_BASE_URL or EXPO_PUBLIC_BASE_URL.",
+          "Server URL not configured. Please set EXPO_PUBLIC_PROXY_BASE_URL or EXPO_PUBLIC_BASE_URL environment variable."
         );
       }
 
+      const baseUrl = bases[0].endsWith("/") ? bases[0].slice(0, -1) : bases[0];
+
       const endpoint = "/api/auth/credentials-signin";
+      const fullUrl = `${baseUrl}${endpoint}`;
       const payload = { email: email.trim(), password: password.trim() };
 
       let lastError = null;
       let data = null;
 
-      for (let i = 0; i < bases.length; i++) {
-        const base = bases[i].endsWith("/") ? bases[i].slice(0, -1) : bases[i];
+      // Use baseUrl (which includes fallback) and also try all available bases
+      const allBases = bases.length > 0 ? bases.map(b => b.endsWith("/") ? b.slice(0, -1) : b) : [baseUrl];
+      
+      for (let i = 0; i < allBases.length; i++) {
+        const base = allBases[i];
         const url = `${base}${endpoint}`;
 
         try {

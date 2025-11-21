@@ -3,7 +3,7 @@ import { useAuthStore } from "./auth/store";
 /**
  * Get the API base URL from environment variables
  * Returns the first available base URL (proxy first, then app base)
- * @throws {Error} If no base URL is configured
+ * Falls back to a default URL if none is configured (prevents crash)
  */
 export const getApiBaseUrl = () => {
   const proxyBase = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
@@ -11,9 +11,13 @@ export const getApiBaseUrl = () => {
   const bases = [proxyBase, appBase].filter(Boolean);
 
   if (bases.length === 0) {
-    throw new Error(
-      "Server URL not configured. Please set EXPO_PUBLIC_PROXY_BASE_URL or EXPO_PUBLIC_BASE_URL.",
-    );
+    // In production, log error but don't crash - return a safe fallback
+    const errorMsg = "Server URL not configured. Please set EXPO_PUBLIC_PROXY_BASE_URL or EXPO_PUBLIC_BASE_URL environment variable.";
+    console.error("❌", errorMsg);
+    
+    // Return null instead of throwing to prevent crashes
+    // Callers should check for null and handle gracefully
+    return null;
   }
 
   const base = bases[0].endsWith("/") ? bases[0].slice(0, -1) : bases[0];
@@ -27,6 +31,11 @@ export const getApiBaseUrl = () => {
  */
 export const buildApiUrl = (endpoint) => {
   const base = getApiBaseUrl();
+  if (!base) {
+    throw new Error(
+      "Cannot build API URL: Server URL not configured. Please set EXPO_PUBLIC_PROXY_BASE_URL or EXPO_PUBLIC_BASE_URL environment variable."
+    );
+  }
   return `${base}${endpoint.startsWith("/") ? endpoint : "/" + endpoint}`;
 };
 
@@ -52,6 +61,13 @@ export const fetchWithAuth = async (url, options = {}) => {
   const proxyBase = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
   const appBase = process.env.EXPO_PUBLIC_BASE_URL || "";
   const chosenBase = proxyBase || appBase;
+  
+  if (!chosenBase) {
+    throw new Error(
+      "Server URL not configured. Please set EXPO_PUBLIC_PROXY_BASE_URL or EXPO_PUBLIC_BASE_URL environment variable."
+    );
+  }
+  
   const base = chosenBase.endsWith("/") ? chosenBase.slice(0, -1) : chosenBase;
   const fullUrl = url.startsWith("http")
     ? url

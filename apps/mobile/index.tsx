@@ -22,14 +22,16 @@ import { ErrorBoundaryWrapper, SharedErrorBoundary } from './__create/SharedErro
 if (__DEV__) {
   LogBox.ignoreAllLogs();
   LogBox.uninstall();
-  function WrapperComponentProvider({
-    children,
-  }: {
-    children: ReactNode;
-  }) {
-    return <DeviceErrorBoundaryWrapper>{children}</DeviceErrorBoundaryWrapper>;
-  }
-
-  AppRegistry.setWrapperComponentProvider(() => WrapperComponentProvider);
-  AppRegistry.registerComponent('main', () => App);
 }
+
+// Always wrap with error boundary, even in production
+function WrapperComponentProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return <DeviceErrorBoundaryWrapper>{children}</DeviceErrorBoundaryWrapper>;
+}
+
+AppRegistry.setWrapperComponentProvider(() => WrapperComponentProvider);
+AppRegistry.registerComponent('main', () => App);

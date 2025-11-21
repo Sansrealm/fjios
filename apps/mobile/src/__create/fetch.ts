@@ -4,13 +4,13 @@ import { fetch as expoFetch } from 'expo/fetch';
 const originalFetch = fetch;
 const authKey = `${process.env.EXPO_PUBLIC_PROJECT_GROUP_ID}-jwt`;
 
-const getURLFromArgs = (...args: Parameters<typeof fetch>) => {
+const getURLFromArgs = (...args: Parameters<typeof expoFetch>) => {
   const [urlArg] = args;
   let url: string | null;
   if (typeof urlArg === 'string') {
     url = urlArg;
-  } else if (typeof urlArg === 'object' && urlArg !== null) {
-    url = urlArg.url;
+  } else if (typeof urlArg === 'object' && urlArg !== null && 'url' in urlArg) {
+    url = (urlArg as { url: string }).url;
   } else {
     url = null;
   }
@@ -30,20 +30,24 @@ const isSecondPartyURL = (url: string) => {
 
 type Params = Parameters<typeof expoFetch>;
 const fetchToWeb = async function fetchWithHeaders(...args: Params) {
-  const firstPartyURL = process.env.EXPO_PUBLIC_BASE_URL;
-  const secondPartyURL = process.env.EXPO_PUBLIC_PROXY_BASE_URL;
-  if (!firstPartyURL || !secondPartyURL) {
+  const firstPartyURL = process.env.EXPO_PUBLIC_BASE_URL || "";
+  const secondPartyURL = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
+  // If no base URL is configured, pass through to expoFetch without modification
+  if (!firstPartyURL && !secondPartyURL) {
     return expoFetch(...args);
   }
   const [input, init] = args;
   const url = getURLFromArgs(input, init);
   if (!url) {
+    // Type assertion needed due to slight differences between expo/fetch and standard fetch types
+    // @ts-ignore - expo/fetch uses FetchRequestInit which is compatible but TypeScript doesn't recognize it
     return expoFetch(input, init);
   }
 
   const isExternalFetch = !isFirstPartyURL(url);
   // we should not add headers to requests that don't go to our own server
   if (isExternalFetch) {
+    // @ts-ignore - expo/fetch uses FetchRequestInit which is compatible but TypeScript doesn't recognize it
     return expoFetch(input, init);
   }
 
@@ -52,7 +56,7 @@ const fetchToWeb = async function fetchWithHeaders(...args: Params) {
   if (typeof input === 'string') {
     finalInput = input.startsWith('/') ? `${baseURL}${input}` : input;
   } else {
-    return originalFetch(input, init);
+    return originalFetch(input, init as any);
   }
 
   const initHeaders = init?.headers ?? {};
@@ -86,7 +90,7 @@ const fetchToWeb = async function fetchWithHeaders(...args: Params) {
   return expoFetch(finalInput, {
     ...init,
     headers: finalHeaders,
-  });
+  } as any);
 };
 
 export default fetchToWeb;
