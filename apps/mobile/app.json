@@ -13,7 +13,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-   "ios": {
+    "ios": {
       "supportsTablet": true,
       "deploymentTarget": "13.4",
       "splash": {
@@ -47,7 +47,9 @@
       },
       "permissions": [
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR"
       ],
       "package": "xyz.create.CreateExpoEnvironment"
     },
@@ -80,6 +82,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8f91126e-c3bc-4acc-ba5f-e7619ccbba08"
+      }
     }
   }
 }
