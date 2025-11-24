@@ -430,13 +430,13 @@ export default function CardsScreen() {
   const insets = useSafeAreaInsets();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
 
-  // Hook card vertical scroll to header for subtle effects
-  const handleCardScroll = useMemo(
-    () =>
-      Animated.event(
-        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-        { useNativeDriver: true }
-      ),
+  // Hook card vertical scroll to header for subtle effects.
+  // Use a plain callback instead of Animated.event so ScrollView receives a real function.
+  const handleCardScroll = useCallback(
+    (event) => {
+      const y = event?.nativeEvent?.contentOffset?.y ?? 0;
+      scrollY.setValue(y);
+    },
     [scrollY]
   );
 

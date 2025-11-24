@@ -21,7 +21,10 @@ const KeyboardAvoidingAnimatedView = (props, ref) => {
   const bottomHeight = useSharedValue(0); // whats going to be added to the bottom when keyboard appears
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) return undefined;
+
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const onKeyboardShow = (event) => {
       const { duration, endCoordinates } = event;
@@ -46,12 +49,12 @@ const KeyboardAvoidingAnimatedView = (props, ref) => {
       bottomRef.current = 0;
     };
 
-    Keyboard.addListener('keyboardWillShow', onKeyboardShow);
-    Keyboard.addListener('keyboardWillHide', onKeyboardHide);
+    const showListener = Keyboard.addListener(showEvent, onKeyboardShow);
+    const hideListener = Keyboard.addListener(hideEvent, onKeyboardHide);
 
     return () => {
-      Keyboard.removeAllListeners('keyboardWillShow');
-      Keyboard.removeAllListeners('keyboardWillHide');
+      showListener?.remove?.();
+      hideListener?.remove?.();
     };
   }, [keyboardVerticalOffset, enabled, bottomHeight]);
 

@@ -1,33 +1,38 @@
 {
-    "cli": {
-        "version": ">= 15.0.15",
-        "appVersionSource": "remote"
+  "cli": {
+    "version": ">= 13.2.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk"
+      }
     },
-    "build": {
-        "development": {
-            "developmentClient": true,
-            "distribution": "internal",
-            "env": {
-                "EXPO_PUBLIC_BASE_URL": "https://fjios.vercel.app/",
-                "EXPO_PUBLIC_HOST": "https://fjios.vercel.app/"
-            }
-        },
-        "preview": {
-            "distribution": "internal",
-            "env": {
-                "EXPO_PUBLIC_BASE_URL": "https://fjios.vercel.app/",
-                "EXPO_PUBLIC_HOST": "https://fjios.vercel.app"
-            }
-        },
-        "production": {
-            "autoIncrement": true,
-            "env": {
-                "EXPO_PUBLIC_BASE_URL": "https://fjios.vercel.app/",
-                "EXPO_PUBLIC_HOST": "https://fjios.vercel.app"
-            }
-        }
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      },
+      "android": {
+        "buildType": "apk"
+      }
     },
-    "submit": {
-        "production": {}
+    "production": {
+      "ios": {
+        "simulator": false
+      },
+      "android": {
+        "buildType": "apk"
+      }
     }
+  },
+  "submit": {
+    "production": {}
+  }
 }
+

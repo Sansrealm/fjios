@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
-import { Alert } from "react-native";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchWithAuth } from "@/utils/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { Alert } from "react-native";
 
 export function useEditCard(id) {
   const queryClient = useQueryClient();
@@ -9,8 +9,12 @@ export function useEditCard(id) {
   const { data: cardData, isLoading } = useQuery({
     queryKey: ["card", id],
     queryFn: async () => {
-      const res = await fetch(`/api/cards/${id}`);
-      if (!res.ok) throw new Error("Failed to load card");
+      const res = await fetchWithAuth(`/api/cards/${id}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const message = data?.error || data?.message || "Failed to load card";
+        throw new Error(message);
+      }
       return res.json();
     },
     enabled: !!id,

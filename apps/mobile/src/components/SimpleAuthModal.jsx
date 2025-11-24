@@ -1,19 +1,19 @@
+import useAppFonts from "@/hooks/useAppFonts";
+import { buildApiUrl } from "@/utils/api";
+import { useAuthModal, useAuthStore } from "@/utils/auth/store";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  Modal,
-  TextInput,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { useAuthModal, useAuthStore } from "@/utils/auth/store";
-import useAppFonts from "@/hooks/useAppFonts";
-import { useRouter } from "expo-router";
-import { buildApiUrl } from "@/utils/api";
 
 export default function SimpleAuthModal() {
   const { isOpen, mode, close, inviteCode } = useAuthModal();
