@@ -37,29 +37,89 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-        }),
-      });
+      // Prefer platform proxy base URL for production/TestFlight; fallback to user base URL
+      const proxyBase = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
+      const appBase = process.env.EXPO_PUBLIC_BASE_URL || "";
+      const bases = [proxyBase, appBase].filter(Boolean);
 
-      const data = await response.json();
+      if (bases.length === 0) {
+        throw new Error(
+          "Server URL not configured. Please set EXPO_PUBLIC_PROXY_BASE_URL or EXPO_PUBLIC_BASE_URL environment variable."
+        );
+      }
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to send reset email");
+      const baseUrl = bases[0].endsWith("/") ? bases[0].slice(0, -1) : bases[0];
+      const endpoint = "/api/auth/forgot-password";
+      const fullUrl = `${baseUrl}${endpoint}`;
+      const payload = { email: email.trim() };
+
+      let lastError = null;
+      let data = null;
+
+      // Use baseUrl (which includes fallback) and also try all available bases
+      const allBases = bases.length > 0 ? bases.map(b => b.endsWith("/") ? b.slice(0, -1) : b) : [baseUrl];
+      
+      for (let i = 0; i < allBases.length; i++) {
+        const base = allBases[i];
+        const url = `${base}${endpoint}`;
+
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+            redirect: "follow",
+          });
+
+          const raw = await response.text();
+          if (!raw) {
+            lastError = new Error(`Empty response from ${url}`);
+            // try next base if available
+            continue;
+          }
+
+          try {
+            data = JSON.parse(raw);
+          } catch (e) {
+            lastError = new Error(
+              `Invalid JSON from ${url}: ${raw.substring(0, 200)}`,
+            );
+            continue;
+          }
+
+          if (!response.ok) {
+            lastError = new Error(
+              data?.error || `Server error ${response.status}`,
+            );
+            continue;
+          }
+
+          // Success path
+          break;
+        } catch (err) {
+          lastError = err;
+          continue;
+        }
+      }
+
+      if (!data) {
+        throw (
+          lastError || new Error("No data received from server after parsing")
+        );
       }
 
       setEmailSent(true);
     } catch (error) {
       console.error("Password reset error:", error);
-      Alert.alert(
-        "Error",
-        error.message || "Failed to send reset email. Please try again.",
-      );
+      let userMessage = error.message || "Failed to send reset email. Please try again.";
+      if (userMessage.includes("Network request failed")) {
+        userMessage =
+          "Cannot connect to server. Please check your internet connection.";
+      }
+      Alert.alert("Error", userMessage);
     } finally {
       setLoading(false);
     }

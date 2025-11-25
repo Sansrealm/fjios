@@ -15,7 +15,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import useAppFonts from "@/hooks/useAppFonts";
 import { useMutation } from "@tanstack/react-query";
-import { buildApiUrl } from "@/utils/api";
 import KeyboardAvoidingAnimatedView from "@/components/KeyboardAvoidingAnimatedView";
 
 export default function EmailEntryScreen() {
@@ -27,22 +26,80 @@ export default function EmailEntryScreen() {
   // Request email verification mutation
   const requestVerificationMutation = useMutation({
     mutationFn: async (email) => {
-      const url = buildApiUrl("/api/auth/request-email-verification");
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
-      });
+      // Prefer platform proxy base URL for production/TestFlight; fallback to user base URL
+      const proxyBase = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
+      const appBase = process.env.EXPO_PUBLIC_BASE_URL || "";
+      const bases = [proxyBase, appBase].filter(Boolean);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to send verification email");
+      if (bases.length === 0) {
+        throw new Error(
+          "Server URL not configured. Please set EXPO_PUBLIC_PROXY_BASE_URL or EXPO_PUBLIC_BASE_URL environment variable."
+        );
       }
 
-      const result = await response.json();
-      return result;
+      const baseUrl = bases[0].endsWith("/") ? bases[0].slice(0, -1) : bases[0];
+      const endpoint = "/api/auth/verify-email/send";
+      const payload = { email: email.trim().toLowerCase() };
+
+      let lastError = null;
+      let data = null;
+
+      // Use baseUrl (which includes fallback) and also try all available bases
+      const allBases = bases.length > 0 ? bases.map(b => b.endsWith("/") ? b.slice(0, -1) : b) : [baseUrl];
+      
+      for (let i = 0; i < allBases.length; i++) {
+        const base = allBases[i];
+        const url = `${base}${endpoint}`;
+
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+            redirect: "follow",
+          });
+
+          const raw = await response.text();
+          if (!raw) {
+            lastError = new Error(`Empty response from ${url}`);
+            // try next base if available
+            continue;
+          }
+
+          try {
+            data = JSON.parse(raw);
+          } catch (e) {
+            lastError = new Error(
+              `Invalid JSON from ${url}: ${raw.substring(0, 200)}`,
+            );
+            continue;
+          }
+
+          if (!response.ok) {
+            lastError = new Error(
+              data?.error || `Server error ${response.status}`,
+            );
+            continue;
+          }
+
+          // Success path
+          break;
+        } catch (err) {
+          lastError = err;
+          continue;
+        }
+      }
+
+      if (!data) {
+        throw (
+          lastError || new Error("No data received from server after parsing")
+        );
+      }
+
+      return data;
     },
     onSuccess: () => {
       Alert.alert(
@@ -59,7 +116,12 @@ export default function EmailEntryScreen() {
       );
     },
     onError: (error) => {
-      Alert.alert("Error", error.message || "Failed to send verification email. Please try again.");
+      let userMessage = error.message || "Failed to send verification email. Please try again.";
+      if (userMessage.includes("Network request failed")) {
+        userMessage =
+          "Cannot connect to server. Please check your internet connection.";
+      }
+      Alert.alert("Error", userMessage);
     },
   });
 
