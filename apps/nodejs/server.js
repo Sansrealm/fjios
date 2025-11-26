@@ -45,6 +45,7 @@ import industryTagsRoutes from './routes/industry-tags/index.js';
 import messagesRoutes from './routes/messages/index.js';
 import savedCardsRoutes from './routes/saved-cards/index.js';
 import systemSettingsRoutes from './routes/system-settings/index.js';
+import uploadRoutes from './routes/upload/index.js';
 
 // Mount routes
 app.use('/api/auth', authRoutes);
@@ -54,6 +55,7 @@ app.use('/api/industry-tags', industryTagsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/saved-cards', savedCardsRoutes);
 app.use('/api/system-settings', systemSettingsRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

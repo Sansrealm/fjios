@@ -3,7 +3,13 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { MotiView } from 'moti';
 
-export function ProfileVideoSection({ videoUrl, onRecord, isUploading, showGlow }) {
+export function ProfileVideoSection({
+  videoUrl,
+  onRecord,
+  onUpload,
+  isUploading,
+  showGlow,
+}) {
   return (
     <View style={{ marginBottom: 24 }}>
       <Text
@@ -34,6 +40,7 @@ export function ProfileVideoSection({ videoUrl, onRecord, isUploading, showGlow 
       >
         <TouchableOpacity
           onPress={onRecord}
+          disabled={isUploading}
           style={{
             backgroundColor: videoUrl
               ? '#8FAEA2'
@@ -44,6 +51,7 @@ export function ProfileVideoSection({ videoUrl, onRecord, isUploading, showGlow 
             padding: 20,
             alignItems: 'center',
             borderStyle: videoUrl ? 'solid' : 'dashed',
+            opacity: isUploading ? 0.7 : 1,
           }}
         >
           <Ionicons
@@ -68,6 +76,37 @@ export function ProfileVideoSection({ videoUrl, onRecord, isUploading, showGlow 
           </Text>
         </TouchableOpacity>
       </MotiView>
+
+      {onUpload && (
+        <TouchableOpacity
+          onPress={onUpload}
+          disabled={isUploading}
+          style={{
+            marginTop: 12,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#8FAEA2',
+            paddingVertical: 14,
+            paddingHorizontal: 18,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            opacity: isUploading ? 0.7 : 1,
+          }}
+        >
+          <Ionicons name="cloud-upload-outline" size={22} color="#8FAEA2" />
+          <Text
+            style={{
+              color: '#8FAEA2',
+              fontFamily: 'Inter_500Medium',
+              fontSize: 16,
+            }}
+          >
+            Upload Existing Video File
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

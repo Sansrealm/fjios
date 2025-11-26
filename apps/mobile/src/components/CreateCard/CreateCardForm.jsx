@@ -15,6 +15,7 @@ export function CreateCardForm({
   formData,
   onFieldChange,
   onRecordVideo,
+  onUploadVideo,
   onUseMyLocation,
   onTagToggle,
   onCreateCard,
@@ -53,10 +54,14 @@ export function CreateCardForm({
             paddingBottom: insets.bottom + 20,
           }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets
         >
           <ProfileVideoSection
             videoUrl={formData.profile_video_url}
             onRecord={onRecordVideo}
+            onUpload={onUploadVideo}
             isUploading={isUploading}
             showGlow={videoUploadGlow}
           />

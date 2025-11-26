@@ -12,6 +12,7 @@ import { useLocationPicker } from '@/hooks/useLocationPicker';
 import { SignInRequired } from '@/components/CreateCard/SignInRequired';
 import { CameraView } from '@/components/CreateCard/CameraView';
 import { CreateCardForm } from '@/components/CreateCard/CreateCardForm';
+import * as DocumentPicker from 'expo-document-picker';
 
 export default function CreateCardScreen() {
   const router = useRouter();
@@ -59,10 +60,56 @@ export default function CreateCardScreen() {
   };
 
   const handleVideoUploaded = (url) => {
+    console.log("[Upload] Profile video available", {
+      url,
+      userId: user?.id,
+    });
     setVideoUrl(url);
     setVideoUploadGlow(true);
     setTimeout(() => setVideoUploadGlow(false), 2000);
     setStep('form');
+  };
+
+  const handleUploadVideoFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['video/*', 'video/mp4', 'video/quicktime'],
+        multiple: false,
+        copyToCacheDirectory: true,
+      });
+      if (result.type === 'cancel') {
+        return;
+      }
+      const asset = result.assets?.[0] || result;
+      if (!asset?.uri) {
+        Alert.alert('Upload failed', 'Could not access selected video file.');
+        return;
+      }
+      if (asset.size && asset.size > 120 * 1024 * 1024) {
+        Alert.alert(
+          'File too large',
+          'Please select a video that is 120MB or smaller.',
+        );
+        return;
+      }
+      const { url, error } = await upload({
+        reactNativeAsset: {
+          uri: asset.uri,
+          name: asset.name || 'profile-video',
+          mimeType: asset.mimeType || 'video/mp4',
+        },
+      });
+      if (error || !url) {
+        Alert.alert('Upload failed', error || 'Could not upload video file.');
+        return;
+      }
+      handleVideoUploaded(url);
+    } catch (error) {
+      Alert.alert(
+        'Upload error',
+        error?.message || 'Failed to upload selected video.',
+      );
+    }
   };
 
   const handleCreateCard = () => {
@@ -117,10 +164,11 @@ export default function CreateCardScreen() {
   }
 
   return (
-    <CreateCardForm
+        <CreateCardForm
       formData={formData}
       onFieldChange={updateField}
       onRecordVideo={handleRecordVideo}
+          onUploadVideo={handleUploadVideoFile}
       onUseMyLocation={handleUseMyLocation}
       onTagToggle={handleTagToggle}
       onCreateCard={handleCreateCard}

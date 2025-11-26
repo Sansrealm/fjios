@@ -8,7 +8,10 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -17,7 +20,7 @@ import {
 
 export default function SimpleAuthModal() {
   const { isOpen, mode, close, inviteCode } = useAuthModal();
-  const { setAuth, auth } = useAuthStore();
+  const { setAuth } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -40,7 +43,7 @@ export default function SimpleAuthModal() {
       const body =
         mode === "signin"
           ? { email, password }
-          : { email, password, name, inviteCode: 'QPZBZRHU' };
+          : { email, password, name, inviteCode: inviteCode || "QPZBZRHU" };
 
       const url = buildApiUrl(endpoint);
       console.log(`[Auth] Making ${mode} request to:`, url);
@@ -66,7 +69,7 @@ export default function SimpleAuthModal() {
       let data;
       try {
         data = JSON.parse(raw);
-      } catch (e) {
+      } catch (_parseErr) {
         // If response is HTML (like a 404 page), provide better error message
         if (raw.trim().startsWith("<") || response.status === 404) {
           throw new Error(
@@ -167,50 +170,55 @@ export default function SimpleAuthModal() {
       presentationStyle="pageSheet"
       onRequestClose={close}
     >
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#000",
-        }}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
       >
-        {/* Header */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 20,
-            paddingVertical: 16,
-            borderBottomWidth: 1,
-            borderBottomColor: "#1E1E1E",
-          }}
+        <ScrollView
+          style={{ flex: 1, backgroundColor: "#000" }}
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <TouchableOpacity onPress={close}>
-            <Ionicons name="close" size={24} color="#8FAEA2" />
-          </TouchableOpacity>
-
-          <Text
+          {/* Header */}
+          <View
             style={{
-              color: "#FFF",
-              fontFamily: "Inter_600SemiBold",
-              fontSize: 18,
-            }}
-          >
-            {mode === "signin" ? "Sign In" : "Sign Up"}
-          </Text>
-
-          <View style={{ width: 24 }} />
-        </View>
-
-        <View style={{ flex: 1, padding: 20, justifyContent: "center" }}>
-          <LinearGradient
-            colors={["#1A1A1A", "#121212"]}
-            style={{
-              borderRadius: 20,
-              padding: 32,
+              flexDirection: "row",
               alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 20,
+              paddingVertical: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: "#1E1E1E",
             }}
           >
+            <TouchableOpacity onPress={close}>
+              <Ionicons name="close" size={24} color="#8FAEA2" />
+            </TouchableOpacity>
+
+            <Text
+              style={{
+                color: "#FFF",
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 18,
+              }}
+            >
+              {mode === "signin" ? "Sign In" : "Sign Up"}
+            </Text>
+
+            <View style={{ width: 24 }} />
+          </View>
+
+          <View style={{ flex: 1, padding: 20, justifyContent: "center" }}>
+            <LinearGradient
+              colors={["#1A1A1A", "#121212"]}
+              style={{
+                borderRadius: 20,
+                padding: 32,
+                alignItems: "center",
+              }}
+            >
             {/* Icon */}
             <View
               style={{
@@ -437,9 +445,10 @@ export default function SimpleAuthModal() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </LinearGradient>
-        </View>
-      </View>
+            </LinearGradient>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
