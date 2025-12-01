@@ -53,8 +53,8 @@ export default function AppScreen({
   return (
     <AppBackground variant={backgroundVariant}>
       <StatusBar style={statusBarStyle} />
-      {headerShown && <AppHeader {...headerProps} />}
       {content}
+      {headerShown && <AppHeader {...headerProps} />}
     </AppBackground>
   );
 }

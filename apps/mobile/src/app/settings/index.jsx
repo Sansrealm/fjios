@@ -9,36 +9,16 @@ import {
 import AppScreen from "@/components/AppScreen";
 import { useRouter } from "expo-router";
 import { HeaderButton } from "@/components/AppHeader";
-import { useMutation } from "@tanstack/react-query";
-import { createAuthenticatedMutationFn } from "@/utils/api";
 import { useUser } from "@/utils/auth/useUser";
 import { useAuth } from "@/utils/auth/useAuth";
+import { useMutation } from "@tanstack/react-query";
+import { createAuthenticatedMutationFn } from "@/utils/api";
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { user } = useUser();
   const { signOut } = useAuth();
 
-  // local status message for inline confirmation
-  const [statusMessage, setStatusMessage] = React.useState(null);
-
-  // Mutation to trigger a password reset email (same as "Forgot Password" flow)
-  const changePasswordMutation = useMutation({
-    mutationFn: createAuthenticatedMutationFn(
-      "/api/auth/forgot-password",
-      "POST",
-    ),
-    onSuccess: () => {
-      // Show inline status message per request
-      setStatusMessage(
-        "An email has been sent to your registered email for this account.",
-      );
-    },
-    onError: (err) => {
-      // Keep an alert for errors to ensure the user notices a misconfiguration
-      Alert.alert("Error", err?.message || "Could not start password change");
-    },
-  });
 
   // Account Deletion mutation
   const deleteAccountMutation = useMutation({
@@ -77,9 +57,8 @@ export default function SettingsScreen() {
       );
       return;
     }
-    // Clear any previous status so the banner reflects the latest action
-    setStatusMessage(null);
-    changePasswordMutation.mutate({ email: user.email });
+    // Navigate to change password page
+    router.push("/change-password");
   };
 
   // Confirm and delete flow
@@ -139,31 +118,6 @@ export default function SettingsScreen() {
           More options coming soon.
         </Text>
 
-        {/* Inline success banner for Change Password */}
-        {statusMessage ? (
-          <View
-            accessibilityLiveRegion="polite"
-            style={{
-              backgroundColor: "#0B3A2E",
-              borderColor: "#145C43",
-              borderWidth: 1,
-              paddingVertical: 12,
-              paddingHorizontal: 14,
-              borderRadius: 10,
-              marginBottom: 16,
-            }}
-          >
-            <Text
-              style={{
-                color: "#D1FAE5",
-                fontSize: 14,
-                fontFamily: "Inter_600SemiBold",
-              }}
-            >
-              {statusMessage}
-            </Text>
-          </View>
-        ) : null}
 
         {/* Account section */}
         <View style={{ gap: 12 }}>
@@ -178,11 +132,10 @@ export default function SettingsScreen() {
             Account
           </Text>
 
-          {/* Change Password action (uses Forgot Password email flow) */}
+          {/* Change Password action */}
           <TouchableOpacity
             accessibilityRole="button"
             onPress={handleChangePassword}
-            disabled={changePasswordMutation.isLoading}
             style={{
               backgroundColor: "#111315",
               borderColor: "#2A2F33",
@@ -195,9 +148,6 @@ export default function SettingsScreen() {
               justifyContent: "center",
             }}
           >
-            {changePasswordMutation.isLoading && (
-              <ActivityIndicator color="#8FAEA2" style={{ marginRight: 8 }} />
-            )}
             <Text
               style={{
                 color: "#E5E7EB",

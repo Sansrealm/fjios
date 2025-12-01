@@ -22,7 +22,7 @@ export default async function forgotPassword(req, res) {
     // Always respond with generic message to avoid user enumeration
     const genericOk = {
       message:
-        'If an account with this email exists, you will receive a password reset link.',
+        'If an account with this email exists, you will receive an OTP to reset your password.',
     };
 
     if (users.length === 0) {
@@ -31,44 +31,41 @@ export default async function forgotPassword(req, res) {
 
     const user = users[0];
 
-    // Generate secure token
-    const token = randomBytes(32).toString('hex');
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Set expiration to 1 hour from now
+    // Set expiration to 15 minutes from now for OTP
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1);
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
-    // Store the token in database
+    // Store the OTP in token field (we'll verify it and then generate actual token)
+    // Format: "otp:123456" where 123456 is the OTP
     await sql(
       `
       INSERT INTO password_reset_tokens (token, user_id, expires_at)
       VALUES ($1, $2, $3)
     `,
-      [token, user.id, expiresAt]
+      [`otp:${otp}`, user.id, expiresAt]
     );
-
-    // Create reset link
-    const baseUrl =
-      process.env.APP_URL || process.env.EXPO_PUBLIC_BASE_URL || '';
-    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
     try {
       await sendEmail({
         to: email,
         from: process.env.FROM_EMAIL,
-        subject: 'Reset Your Password',
+        subject: 'Password Reset OTP',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">Reset Your Password</h2>
-            <p>You requested a password reset for your account. Click the link below to create a new password:</p>
-            <div style="margin: 30px 0;">
-              <a href="${resetUrl}" style="background-color: #8FAEA2; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Password</a>
+            <h2 style="color: #333;">Password Reset OTP</h2>
+            <p>You requested a password reset for your account. Use the OTP below to verify your identity:</p>
+            <div style="margin: 30px 0; text-align: center;">
+              <div style="background-color: #8FAEA2; color: #000; padding: 20px 40px; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 8px; display: inline-block;">
+                ${otp}
+              </div>
             </div>
-            <p style="color: #666; font-size: 14px;">This link will expire in 1 hour. If you didn't request this password reset, you can safely ignore this email.</p>
-            <p style="color: #666; font-size: 12px;">If the button doesn't work, copy and paste this link into your browser:<br><a href="${resetUrl}" style="color: #8FAEA2;">${resetUrl}</a></p>
+            <p style="color: #666; font-size: 14px;">This OTP will expire in 15 minutes. If you didn't request this password reset, you can safely ignore this email.</p>
           </div>
         `,
-        text: `Reset Your Password\n\n${resetUrl}\n\nThis link will expire in 1 hour. If you didn't request this password reset, you can safely ignore this email.`,
+        text: `Password Reset OTP\n\nYour OTP is: ${otp}\n\nThis OTP will expire in 15 minutes. If you didn't request this password reset, you can safely ignore this email.`,
       });
 
       return res.json(genericOk);

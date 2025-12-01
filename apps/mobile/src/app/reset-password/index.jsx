@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,6 +14,8 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import useAppFonts from "@/hooks/useAppFonts";
 import KeyboardAvoidingAnimatedView from "@/components/KeyboardAvoidingAnimatedView";
+import PasswordInput from "@/components/PasswordInput";
+import { buildApiUrl } from "@/utils/api";
 
 export default function ResetPasswordScreen() {
   const [password, setPassword] = useState("");
@@ -49,10 +51,12 @@ export default function ResetPasswordScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch("/api/auth/reset-password", {
+      const url = buildApiUrl("/api/auth/reset-password");
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
           token,
@@ -266,12 +270,15 @@ export default function ResetPasswordScreen() {
         </View>
 
         {/* Content */}
-        <View
-          style={{
-            flex: 1,
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
             paddingHorizontal: 20,
+            paddingVertical: 20,
             justifyContent: "center",
           }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <LinearGradient
             colors={["#1A1A1A", "#121212"]}
@@ -322,82 +329,24 @@ export default function ResetPasswordScreen() {
             </Text>
 
             {/* New Password Input */}
-            <View
-              style={{
-                width: "100%",
-                marginBottom: 16,
-              }}
-            >
-              <Text
-                style={{
-                  color: "#8FAEA2",
-                  fontFamily: "Inter_500Medium",
-                  fontSize: 14,
-                  marginBottom: 8,
-                }}
-              >
-                New Password
-              </Text>
-
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Enter new password"
-                placeholderTextColor="#7C7C7C"
-                secureTextEntry
-                editable={!loading}
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  borderWidth: 1,
-                  borderColor: "#8FAEA2",
-                  borderRadius: 12,
-                  paddingHorizontal: 16,
-                  paddingVertical: 16,
-                  color: "#FFF",
-                  fontFamily: "Inter_400Regular",
-                  fontSize: 16,
-                }}
-              />
-            </View>
+            <PasswordInput
+              label="New Password"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter new password"
+              editable={!loading}
+              containerStyle={{ marginBottom: 16 }}
+            />
 
             {/* Confirm Password Input */}
-            <View
-              style={{
-                width: "100%",
-                marginBottom: 24,
-              }}
-            >
-              <Text
-                style={{
-                  color: "#8FAEA2",
-                  fontFamily: "Inter_500Medium",
-                  fontSize: 14,
-                  marginBottom: 8,
-                }}
-              >
-                Confirm Password
-              </Text>
-
-              <TextInput
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Confirm new password"
-                placeholderTextColor="#7C7C7C"
-                secureTextEntry
-                editable={!loading}
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  borderWidth: 1,
-                  borderColor: "#8FAEA2",
-                  borderRadius: 12,
-                  paddingHorizontal: 16,
-                  paddingVertical: 16,
-                  color: "#FFF",
-                  fontFamily: "Inter_400Regular",
-                  fontSize: 16,
-                }}
-              />
-            </View>
+            <PasswordInput
+              label="Confirm Password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="Confirm new password"
+              editable={!loading}
+              containerStyle={{ marginBottom: 24 }}
+            />
 
             {/* Reset Password Button */}
             <TouchableOpacity
@@ -449,7 +398,7 @@ export default function ResetPasswordScreen() {
               </Text>
             </TouchableOpacity>
           </LinearGradient>
-        </View>
+        </ScrollView>
       </View>
     </KeyboardAvoidingAnimatedView>
   );

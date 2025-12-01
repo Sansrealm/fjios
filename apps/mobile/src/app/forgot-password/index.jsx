@@ -112,6 +112,11 @@ export default function ForgotPasswordScreen() {
       }
 
       setEmailSent(true);
+      // Navigate to OTP verification screen
+      router.push({
+        pathname: "/verify-otp",
+        params: { email: email.trim() },
+      });
     } catch (error) {
       console.error("Password reset error:", error);
       let userMessage = error.message || "Failed to send reset email. Please try again.";
