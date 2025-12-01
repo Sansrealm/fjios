@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import multer from 'multer';
 import { getSession } from '../../middleware/auth.js';
 import upload from '../../utils/upload.js';
+import { uploadVideoBuffer } from '../../utils/cloudinary.js';
 
 const router = express.Router();
 
@@ -147,6 +148,65 @@ router.post(
       console.error('[Upload] error:', error);
       return res.status(error.status || 500).json({
         error: error.message || 'Upload failed',
+      });
+    }
+  },
+);
+
+// Upload a video file directly to Cloudinary
+router.post(
+  '/video',
+  (req, res, next) => {
+    uploadMiddleware.single('video')(req, res, (err) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res
+            .status(413)
+            .json({ error: 'File too large. Maximum supported size is 100MB.' });
+        }
+        const status = err.name === 'MulterError' ? 400 : 500;
+        return res.status(status).json({ error: err.message || 'Upload failed' });
+      }
+      next();
+    });
+  },
+  async (req, res) => {
+    try {
+      const session = await getSession(req);
+      if (!session?.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "Invalid request. Provide 'video' file field." });
+      }
+
+      const result = await uploadVideoBuffer({
+        buffer: req.file.buffer,
+        fileName: req.file.originalname,
+      });
+
+      console.log('[Upload] Video stored in Cloudinary', {
+        userId: session.user.id,
+        fileName: req.file.originalname,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+        url: result.secure_url || result.url,
+        publicId: result.public_id,
+        duration: result.duration,
+      });
+
+      return res.json({
+        url: result.secure_url || result.url,
+        publicId: result.public_id,
+        duration: result.duration,
+        resourceType: result.resource_type,
+        format: result.format,
+      });
+    } catch (error) {
+      console.error('[Upload] Cloudinary video upload error:', error);
+      return res.status(error.status || 500).json({
+        error: error.message || 'Video upload failed',
       });
     }
   },

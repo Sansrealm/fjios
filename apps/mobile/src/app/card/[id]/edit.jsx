@@ -154,7 +154,7 @@ export default function EditCardScreen() {
           >
             <ProfileVideoSection
               profileVideoUrl={formData.profile_video_url}
-              onUpload={() => uploadProfileVideo(setFormData)}
+              onUpload={() => uploadProfileVideo(id, setFormData)}
               uploading={uploading}
               updatingProfileVideo={updatingProfileVideo}
             />

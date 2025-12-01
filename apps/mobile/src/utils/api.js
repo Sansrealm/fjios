@@ -47,10 +47,14 @@ export const fetchWithAuth = async (url, options = {}) => {
   const { auth, setAuth } = useAuthStore.getState();
 
   const hasBody = typeof options.body !== "undefined" && options.body !== null;
+  const isFormData =
+    hasBody &&
+    typeof FormData !== "undefined" &&
+    options.body instanceof FormData;
 
   const buildHeaders = (jwt) => ({
-    // Only set Content-Type when we actually send a body; avoids unnecessary preflights
-    ...(hasBody && { "Content-Type": "application/json" }),
+    // Only set Content-Type when we actually send a JSON body; avoids unnecessary preflights
+    ...(hasBody && !isFormData && { "Content-Type": "application/json" }),
     Accept: "application/json",
     ...options.headers,
     // Include Authorization header if JWT is available
@@ -87,7 +91,11 @@ export const fetchWithAuth = async (url, options = {}) => {
     // Network-level error; surface as a Response-like object to keep callers consistent
     return new Response(
       JSON.stringify({ error: "Network error. Please try again." }),
-      { status: 0, headers: { "Content-Type": "application/json" } },
+      {
+        // Use a valid HTTP status code; 0 is not allowed in React Native's Response
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      },
     );
   }
 
@@ -122,6 +130,49 @@ export const fetchWithAuth = async (url, options = {}) => {
   }
 
   return response;
+};
+
+/**
+ * Upload a video file (e.g., camera recording) to Cloudinary via the backend
+ * Expects an object with at least a `uri` pointing to the local video file.
+ * Returns the parsed JSON from the server, including the video URL.
+ */
+export const uploadVideoToCloudinary = async (video) => {
+  const uri = video?.file?.uri || video?.uri;
+  if (!uri) {
+    throw new Error("Upload failed: missing video URI.");
+  }
+
+  const name =
+    video?.fileName || video?.name || "camera-recording.mp4";
+  const type =
+    video?.mimeType || video?.type || "video/mp4";
+
+  const formData = new FormData();
+  formData.append(
+    "video",
+    {
+      uri,
+      name,
+      type,
+    },
+  );
+
+  const response = await fetchWithAuth("/api/upload/video", {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error || `Video upload failed with status ${response.status}`,
+    );
+  }
+
+  // data includes: { url, publicId, duration, resourceType, format }
+  return data;
 };
 
 /**

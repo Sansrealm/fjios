@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import useUpload from "@/utils/useUpload";
+import { uploadVideoToCloudinary, fetchWithAuth } from "@/utils/api";
 
 export function useVideoUpload() {
-  const [upload, { loading: uploading }] = useUpload();
+  const [uploading, setUploading] = useState(false);
   const [updatingProfileVideo, setUpdatingProfileVideo] = useState(false);
 
   // Normalize duration to seconds regardless of platform quirks
@@ -64,12 +64,24 @@ export function useVideoUpload() {
       Alert.alert("Too long", "Please select a video up to 30 seconds.");
       return null;
     }
-    const { url, error } = await upload({ reactNativeAsset: asset });
-    if (error || !url) {
-      Alert.alert("Upload failed", error || "Could not upload video");
+
+    try {
+      setUploading(true);
+      const data = await uploadVideoToCloudinary(asset);
+      if (!data?.url) {
+        Alert.alert("Upload failed", "Could not upload video");
+        return null;
+      }
+      return data.url;
+    } catch (e) {
+      Alert.alert(
+        "Upload failed",
+        e?.message || "Could not upload video",
+      );
       return null;
+    } finally {
+      setUploading(false);
     }
-    return url;
   };
 
   // Record from camera and upload, returning the URL
@@ -96,22 +108,55 @@ export function useVideoUpload() {
       Alert.alert("Too long", "Please record up to 30 seconds.");
       return null;
     }
-    const { url, error } = await upload({ reactNativeAsset: asset });
-    if (error || !url) {
-      Alert.alert("Upload failed", error || "Could not upload video");
+
+    try {
+      setUploading(true);
+      const data = await uploadVideoToCloudinary(asset);
+      if (!data?.url) {
+        Alert.alert("Upload failed", "Could not upload video");
+        return null;
+      }
+      return data.url;
+    } catch (e) {
+      Alert.alert(
+        "Upload failed",
+        e?.message || "Could not upload video",
+      );
       return null;
+    } finally {
+      setUploading(false);
     }
-    return url;
   };
 
   // CHANGE: Profile video now records from camera only (no library prompt)
-  const uploadProfileVideo = async (setFormData) => {
+  // Additionally, it immediately persists profile_video_url to the card in the backend.
+  const uploadProfileVideo = async (cardId, setFormData) => {
     try {
       setUpdatingProfileVideo(true);
       const url = await recordAndUploadVideo();
       if (!url) return;
-      setFormData((p) => ({ ...p, profile_video_url: url }));
-      Alert.alert("Profile video set", "Remember to Save Changes.");
+
+      // If we have a cardId (edit screen), persist directly to the API
+      if (cardId) {
+        const res = await fetchWithAuth(`/api/cards/${cardId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profile_video_url: url }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(
+            data?.error || data?.message || "Failed to save profile video",
+          );
+        }
+        const savedUrl = data?.card?.profile_video_url || url;
+        setFormData((p) => ({ ...p, profile_video_url: savedUrl }));
+        Alert.alert("Profile video updated", "Your profile video was saved.");
+      } else {
+        // Fallback: just update local form state
+        setFormData((p) => ({ ...p, profile_video_url: url }));
+        Alert.alert("Profile video set", "Remember to Save Changes.");
+      }
     } catch (e) {
       Alert.alert("Error", e.message || "Failed to set profile video");
     } finally {
