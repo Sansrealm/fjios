@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -173,12 +174,17 @@ export default function InviteScreen() {
       </View>
 
       {/* Content */}
-      <View
-        style={{
-          flex: 1,
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
           paddingHorizontal: 20,
+          paddingVertical: 20,
+          paddingBottom: 40,
           justifyContent: "center",
         }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={true}
       >
         <LinearGradient
           colors={["#1A1A1A", "#121212"]}
@@ -348,7 +354,7 @@ export default function InviteScreen() {
             </Text>
           </TouchableOpacity>
         </LinearGradient>
-      </View>
+      </ScrollView>
     </View>
   );
 }

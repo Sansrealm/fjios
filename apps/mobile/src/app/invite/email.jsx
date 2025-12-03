@@ -23,105 +23,22 @@ export default function EmailEntryScreen() {
   const insets = useSafeAreaInsets();
   const fontsLoaded = useAppFonts();
 
-  // Request email verification mutation
+  // Request email verification mutation - just navigate, don't send email yet
   const requestVerificationMutation = useMutation({
     mutationFn: async (email) => {
-      // Prefer platform proxy base URL for production/TestFlight; fallback to user base URL
-      const proxyBase = process.env.EXPO_PUBLIC_PROXY_BASE_URL || "";
-      const appBase = process.env.EXPO_PUBLIC_BASE_URL || "";
-      const bases = [proxyBase, appBase].filter(Boolean);
-
-      if (bases.length === 0) {
-        throw new Error(
-          "Server URL not configured. Please set EXPO_PUBLIC_PROXY_BASE_URL or EXPO_PUBLIC_BASE_URL environment variable."
-        );
-      }
-
-      const baseUrl = bases[0].endsWith("/") ? bases[0].slice(0, -1) : bases[0];
-      const endpoint = "/api/auth/verify-email/send";
-      const payload = { email: email.trim().toLowerCase() };
-
-      let lastError = null;
-      let data = null;
-
-      // Use baseUrl (which includes fallback) and also try all available bases
-      const allBases = bases.length > 0 ? bases.map(b => b.endsWith("/") ? b.slice(0, -1) : b) : [baseUrl];
-      
-      for (let i = 0; i < allBases.length; i++) {
-        const base = allBases[i];
-        const url = `${base}${endpoint}`;
-
-        try {
-          const response = await fetch(url, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify(payload),
-            redirect: "follow",
-          });
-
-          const raw = await response.text();
-          if (!raw) {
-            lastError = new Error(`Empty response from ${url}`);
-            // try next base if available
-            continue;
-          }
-
-          try {
-            data = JSON.parse(raw);
-          } catch (e) {
-            lastError = new Error(
-              `Invalid JSON from ${url}: ${raw.substring(0, 200)}`,
-            );
-            continue;
-          }
-
-          if (!response.ok) {
-            lastError = new Error(
-              data?.error || `Server error ${response.status}`,
-            );
-            continue;
-          }
-
-          // Success path
-          break;
-        } catch (err) {
-          lastError = err;
-          continue;
-        }
-      }
-
-      if (!data) {
-        throw (
-          lastError || new Error("No data received from server after parsing")
-        );
-      }
-
-      return data;
+      // Just return success - email will be sent on OTP screen
+      return { message: 'OK' };
     },
     onSuccess: () => {
-      Alert.alert(
-        "Verification Email Sent",
-        "Please check your email and click the verification link to continue.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // User will be redirected via deep link when they click email link
-            },
-          },
-        ]
-      );
+      // Navigate to OTP verification screen (email will be sent there)
+      router.push({
+        pathname: "/verify-email",
+        params: { email: email.trim().toLowerCase() },
+      });
     },
     onError: (error) => {
-      let userMessage = error.message || "Failed to send verification email. Please try again.";
-      if (userMessage.includes("Network request failed")) {
-        userMessage =
-          "Cannot connect to server. Please check your internet connection.";
-      }
-      Alert.alert("Error", userMessage);
+      // Should not happen since we're just navigating
+      console.error("Navigation error:", error);
     },
   });
 
@@ -234,7 +151,7 @@ export default function EmailEntryScreen() {
                 marginBottom: 32,
               }}
             >
-              Enter your email address to receive a verification link. You'll need to verify your email before you can continue.
+              Enter your email address to receive a verification OTP. You'll need to verify your email before you can continue.
             </Text>
 
             {/* Email Input */}
@@ -309,19 +226,6 @@ export default function EmailEntryScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* Help Text */}
-            <Text
-              style={{
-                color: "#7C7C7C",
-                fontFamily: "Inter_400Regular",
-                fontSize: 14,
-                textAlign: "center",
-                marginTop: 24,
-                lineHeight: 20,
-              }}
-            >
-              After clicking the link in your email, you'll be redirected back to the app to continue.
-            </Text>
 
             {/* Sign In Link for Existing Users */}
             <TouchableOpacity

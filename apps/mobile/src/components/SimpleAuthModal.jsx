@@ -177,9 +177,11 @@ export default function SimpleAuthModal() {
       >
         <ScrollView
           style={{ flex: 1, backgroundColor: "#000" }}
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          bounces={false}
+          scrollEnabled={true}
         >
           {/* Header */}
           <View

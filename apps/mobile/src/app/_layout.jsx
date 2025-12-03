@@ -5,6 +5,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Platform } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -47,7 +48,17 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+            animationTypeForReplace: 'push',
+            presentation: 'card',
+            gestureEnabled: true,
+            gestureDirection: 'horizontal',
+            fullScreenGestureEnabled: true,
+          }}
+        >
           <Stack.Screen name="index" />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           {/* Use full route names that include /index for directory routes */}

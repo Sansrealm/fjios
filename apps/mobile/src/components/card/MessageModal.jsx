@@ -7,6 +7,7 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import KeyboardAvoidingAnimatedView from "@/components/KeyboardAvoidingAnimatedView";
@@ -248,7 +249,13 @@ function AuthenticatedMessageView({
           </TouchableOpacity>
         </View>
 
-        <View style={{ flex: 1, padding: 20 }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+        >
           {/* Ask Selection (only when no preselected ask); removed header text and General Message option */}
           {!preselectedAsk && asks && asks.length > 0 ? (
             <View style={{ marginBottom: 16 }}>
@@ -367,7 +374,7 @@ function AuthenticatedMessageView({
               }}
             />
           </View>
-        </View>
+        </ScrollView>
       </View>
     </KeyboardAvoidingAnimatedView>
   );

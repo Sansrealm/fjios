@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,6 +21,7 @@ import { useAuthStore } from "@/utils/auth/store";
 import KeyboardAvoidingAnimatedView from "@/components/KeyboardAvoidingAnimatedView";
 
 export default function PasswordCreationScreen() {
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -43,6 +45,7 @@ export default function PasswordCreationScreen() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          name: data.name,
           email: data.email,
           password: data.password,
           inviteCode: data.inviteCode,
@@ -74,6 +77,11 @@ export default function PasswordCreationScreen() {
   });
 
   const handleCreateAccount = () => {
+    if (!name.trim()) {
+      Alert.alert("Error", "Please enter your name");
+      return;
+    }
+
     if (!password.trim()) {
       Alert.alert("Error", "Please enter a password");
       return;
@@ -96,6 +104,7 @@ export default function PasswordCreationScreen() {
     }
 
     createAccountMutation.mutate({
+      name: name.trim(),
       email: email.trim().toLowerCase(),
       password: password.trim(),
       inviteCode: inviteCode.trim().toUpperCase(),
@@ -142,12 +151,17 @@ export default function PasswordCreationScreen() {
         </View>
 
         {/* Content */}
-        <View
-          style={{
-            flex: 1,
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
             paddingHorizontal: 20,
+            paddingVertical: 20,
+            paddingBottom: 40,
             justifyContent: "center",
           }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={true}
         >
           <LinearGradient
             colors={["#1A1A1A", "#121212"]}
@@ -195,8 +209,84 @@ export default function PasswordCreationScreen() {
                 marginBottom: 32,
               }}
             >
-              Choose a secure password for your account. Make sure it's at least 8 characters long.
+              Enter your name and create a secure password to complete your account setup.
             </Text>
+
+            {/* Name Input */}
+            <View
+              style={{
+                width: "100%",
+                marginBottom: 16,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#8FAEA2",
+                  fontFamily: "Inter_500Medium",
+                  fontSize: 14,
+                  marginBottom: 8,
+                }}
+              >
+                Full Name
+              </Text>
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                placeholder="Enter your full name"
+                placeholderTextColor="#7C7C7C"
+                autoCapitalize="words"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  borderWidth: 1,
+                  borderColor: "#8FAEA2",
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 16,
+                  color: "#FFF",
+                  fontFamily: "Inter_400Regular",
+                  fontSize: 16,
+                }}
+              />
+            </View>
+
+            {/* Email Display (Read-only) */}
+            <View
+              style={{
+                width: "100%",
+                marginBottom: 16,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#8FAEA2",
+                  fontFamily: "Inter_500Medium",
+                  fontSize: 14,
+                  marginBottom: 8,
+                }}
+              >
+                Email
+              </Text>
+              <View
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  borderWidth: 1,
+                  borderColor: "rgba(143, 174, 162, 0.3)",
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 16,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#CFCFCF",
+                    fontFamily: "Inter_400Regular",
+                    fontSize: 16,
+                  }}
+                >
+                  {email}
+                </Text>
+              </View>
+            </View>
 
             {/* Password Input */}
             <View
@@ -343,7 +433,7 @@ export default function PasswordCreationScreen() {
               </Text>
             </TouchableOpacity>
           </LinearGradient>
-        </View>
+        </ScrollView>
       </View>
     </KeyboardAvoidingAnimatedView>
   );
