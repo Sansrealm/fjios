@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/utils/auth/useAuth';
 import useUser from '@/utils/auth/useUser';
 import useAppFonts from '@/hooks/useAppFonts';
 import { useQuery } from '@tanstack/react-query';
-import useUpload from '@/utils/useUpload';
 import { useCreateCard } from '@/hooks/useCreateCard';
 import { useCardForm } from '@/hooks/useCardForm';
 import { useLocationPicker } from '@/hooks/useLocationPicker';
+import { useVideoUpload } from '@/hooks/useVideoUpload';
 import { SignInRequired } from '@/components/CreateCard/SignInRequired';
-import { CameraView } from '@/components/CreateCard/CameraView';
 import { CreateCardForm } from '@/components/CreateCard/CreateCardForm';
-import * as DocumentPicker from 'expo-document-picker';
+import { usePreventAuthBack } from '@/hooks/usePreventAuthBack';
 
 export default function CreateCardScreen() {
   const router = useRouter();
@@ -20,15 +19,21 @@ export default function CreateCardScreen() {
   const { isAuthenticated } = useAuth();
   const { data: user } = useUser();
 
-  const [step, setStep] = useState('form');
-  const [videoUploadGlow, setVideoUploadGlow] = useState(false);
-  const [upload, { loading: isUploading }] = useUpload();
-
-  const { formData, updateField, handleTagToggle, setVideoUrl, setLocation } =
+  const { formData, updateField, handleTagToggle, setLocation, setFormData } =
     useCardForm(user);
 
   const { createCard, isCreating, showConfetti, setShowConfetti } =
     useCreateCard(user);
+
+  const {
+    uploading,
+    updatingProfileVideo,
+    uploadProfileVideo,
+    uploadProfileVideoFromGallery,
+  } = useVideoUpload();
+
+  // Prevent hardware back button from navigating back to auth screens
+  usePreventAuthBack();
 
   const { handleUseMyLocation } = useLocationPicker(setLocation);
 
@@ -55,61 +60,16 @@ export default function CreateCardScreen() {
 
   const alreadyHasCard = (myCards?.cards?.length || 0) > 0;
 
-  const handleRecordVideo = async () => {
-    setStep('camera');
+  const handleUploadProfileVideo = async () => {
+    // For create card, we don't have a cardId yet, so pass null
+    // This will just update the local form state
+    await uploadProfileVideo(null, setFormData);
   };
 
-  const handleVideoUploaded = (url) => {
-    console.log("[Upload] Profile video available", {
-      url,
-      userId: user?.id,
-    });
-    setVideoUrl(url);
-    setVideoUploadGlow(true);
-    setTimeout(() => setVideoUploadGlow(false), 2000);
-    setStep('form');
-  };
-
-  const handleUploadVideoFile = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['video/*', 'video/mp4', 'video/quicktime'],
-        multiple: false,
-        copyToCacheDirectory: true,
-      });
-      if (result.type === 'cancel') {
-        return;
-      }
-      const asset = result.assets?.[0] || result;
-      if (!asset?.uri) {
-        Alert.alert('Upload failed', 'Could not access selected video file.');
-        return;
-      }
-      if (asset.size && asset.size > 120 * 1024 * 1024) {
-        Alert.alert(
-          'File too large',
-          'Please select a video that is 120MB or smaller.',
-        );
-        return;
-      }
-      const { url, error } = await upload({
-        reactNativeAsset: {
-          uri: asset.uri,
-          name: asset.name || 'profile-video',
-          mimeType: asset.mimeType || 'video/mp4',
-        },
-      });
-      if (error || !url) {
-        Alert.alert('Upload failed', error || 'Could not upload video file.');
-        return;
-      }
-      handleVideoUploaded(url);
-    } catch (error) {
-      Alert.alert(
-        'Upload error',
-        error?.message || 'Failed to upload selected video.',
-      );
-    }
+  const handleUploadProfileVideoFromGallery = async () => {
+    // For create card, we don't have a cardId yet, so pass null
+    // This will just update the local form state
+    await uploadProfileVideoFromGallery(null, setFormData);
   };
 
   const handleCreateCard = () => {
@@ -142,7 +102,19 @@ export default function CreateCardScreen() {
       return;
     }
 
-    createCard(formData);
+    // Ensure profile_video_url is included in the submission
+    const cardDataToSubmit = {
+      ...formData,
+      profile_video_url: formData.profile_video_url || '',
+    };
+    
+    console.log('[Create Card] Submitting card data:', {
+      name: cardDataToSubmit.name,
+      profile_video_url: cardDataToSubmit.profile_video_url || 'missing',
+      hasVideoUrl: !!cardDataToSubmit.profile_video_url,
+    });
+
+    createCard(cardDataToSubmit);
   };
 
   if (!fontsLoaded) {
@@ -153,32 +125,22 @@ export default function CreateCardScreen() {
     return <SignInRequired onGetStarted={() => router.push('/invite/email')} />;
   }
 
-  if (step === 'camera') {
-    return (
-      <CameraView
-        onBack={() => setStep('form')}
-        onVideoUploaded={handleVideoUploaded}
-        userId={user?.id}
-      />
-    );
-  }
-
   return (
-        <CreateCardForm
+    <CreateCardForm
       formData={formData}
       onFieldChange={updateField}
-      onRecordVideo={handleRecordVideo}
-          onUploadVideo={handleUploadVideoFile}
+      onUploadProfileVideo={handleUploadProfileVideo}
+      onUploadProfileVideoFromGallery={handleUploadProfileVideoFromGallery}
       onUseMyLocation={handleUseMyLocation}
       onTagToggle={handleTagToggle}
       onCreateCard={handleCreateCard}
       onBack={() => router.back()}
       tags={tagsData?.tags}
       isCreating={isCreating}
-      isUploading={isUploading}
+      uploading={uploading}
+      updatingProfileVideo={updatingProfileVideo}
       showConfetti={showConfetti}
       onConfettiComplete={() => setShowConfetti(false)}
-      videoUploadGlow={videoUploadGlow}
     />
   );
 }

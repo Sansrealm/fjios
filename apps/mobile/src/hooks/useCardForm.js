@@ -42,6 +42,7 @@ export function useCardForm(initialUser) {
 
   return {
     formData,
+    setFormData,
     updateField,
     handleTagToggle,
     setVideoUrl,

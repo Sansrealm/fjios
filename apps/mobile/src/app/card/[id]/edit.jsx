@@ -36,6 +36,7 @@ export default function EditCardScreen() {
     uploading,
     updatingProfileVideo,
     uploadProfileVideo,
+    uploadProfileVideoFromGallery,
     recordAndUploadVideo, // used for replacing ask videos
   } = useVideoUpload();
 
@@ -155,6 +156,7 @@ export default function EditCardScreen() {
             <ProfileVideoSection
               profileVideoUrl={formData.profile_video_url}
               onUpload={() => uploadProfileVideo(id, setFormData)}
+              onUploadFromGallery={() => uploadProfileVideoFromGallery(id, setFormData)}
               uploading={uploading}
               updatingProfileVideo={updatingProfileVideo}
             />

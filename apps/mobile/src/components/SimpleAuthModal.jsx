@@ -1,9 +1,9 @@
 import useAppFonts from "@/hooks/useAppFonts";
-import { buildApiUrl } from "@/utils/api";
+import { buildApiUrl, fetchWithAuth } from "@/utils/api";
 import { useAuthModal, useAuthStore } from "@/utils/auth/store";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, useNavigation } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -27,6 +27,7 @@ export default function SimpleAuthModal() {
   const [loading, setLoading] = useState(false);
   const fontsLoaded = useAppFonts();
   const router = useRouter();
+  const navigation = useNavigation();
 
   const handleAuth = async () => {
     if (!email || !password || (mode === "signup" && !name)) {
@@ -130,14 +131,78 @@ export default function SimpleAuthModal() {
 
       close();
 
-      // Navigate after successful auth
-      if (mode === "signup") {
-        // After signup, navigate to create card screen
-        router.replace("/create-card");
-      } else {
-        // After sign in, check if user has card and navigate accordingly
-        // For now, navigate to cards tab (can be enhanced later to check for card)
-        router.replace("/(tabs)/cards");
+      // Reset navigation stack and navigate after successful auth
+      // Check if user has a card and navigate accordingly
+      try {
+        const user = data.user;
+        if (user?.id) {
+          const cardsResponse = await fetchWithAuth(`/api/cards?userId=${user.id}`);
+          if (cardsResponse.ok) {
+            const cardsData = await cardsResponse.json();
+            const hasCard = cardsData?.cards?.length > 0;
+            
+            // Reset navigation stack - prevents going back to auth screens
+            if (hasCard) {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "(tabs)/cards" }],
+              });
+            } else {
+              // No card yet - navigate to create card screen
+              if (mode === "signup") {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "create-card/index" }],
+                });
+              } else {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "(tabs)/profile" }],
+                });
+              }
+            }
+          } else {
+            // If cards fetch fails, default based on mode
+            if (mode === "signup") {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "create-card/index" }],
+              });
+            } else {
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "(tabs)/profile" }],
+              });
+            }
+          }
+        } else {
+          // If no user ID, default based on mode
+          if (mode === "signup") {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "create-card/index" }],
+            });
+          } else {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "(tabs)/profile" }],
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error checking user cards:", error);
+        // If error checking cards, default based on mode
+        if (mode === "signup") {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "create-card/index" }],
+          });
+        } else {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "(tabs)/profile" }],
+          });
+        }
       }
     } catch (error) {
       console.error("Auth error:", error);

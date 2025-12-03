@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import KeyboardAvoidingAnimatedView from '@/components/KeyboardAvoidingAnimatedView';
 import ConfettiOverlay from '@/components/ConfettiOverlay';
 import { CreateCardHeader } from './CreateCardHeader';
-import { ProfileVideoSection } from './ProfileVideoSection';
+import { ProfileVideoSection } from '@/components/EditCard/ProfileVideoSection';
 import { BasicInfoSection } from './BasicInfoSection';
 import { LocationSection } from './LocationSection';
 import { IndustryTagsSection } from './IndustryTagsSection';
@@ -14,18 +14,18 @@ import { CreateButton } from './CreateButton';
 export function CreateCardForm({
   formData,
   onFieldChange,
-  onRecordVideo,
-  onUploadVideo,
+  onUploadProfileVideo,
+  onUploadProfileVideoFromGallery,
   onUseMyLocation,
   onTagToggle,
   onCreateCard,
   onBack,
   tags,
   isCreating,
-  isUploading,
+  uploading,
+  updatingProfileVideo,
   showConfetti,
   onConfettiComplete,
-  videoUploadGlow,
 }) {
   const insets = useSafeAreaInsets();
 
@@ -59,11 +59,11 @@ export function CreateCardForm({
           automaticallyAdjustKeyboardInsets
         >
           <ProfileVideoSection
-            videoUrl={formData.profile_video_url}
-            onRecord={onRecordVideo}
-            onUpload={onUploadVideo}
-            isUploading={isUploading}
-            showGlow={videoUploadGlow}
+            profileVideoUrl={formData.profile_video_url}
+            onUpload={onUploadProfileVideo}
+            onUploadFromGallery={onUploadProfileVideoFromGallery}
+            uploading={uploading}
+            updatingProfileVideo={updatingProfileVideo}
           />
 
           <BasicInfoSection

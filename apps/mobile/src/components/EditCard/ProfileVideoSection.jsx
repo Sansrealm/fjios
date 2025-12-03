@@ -5,6 +5,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 export function ProfileVideoSection({
   profileVideoUrl,
   onUpload,
+  onUploadFromGallery,
   uploading,
   updatingProfileVideo,
 }) {
@@ -58,6 +59,38 @@ export function ProfileVideoSection({
           </>
         )}
       </TouchableOpacity>
+      
+      {onUploadFromGallery && (
+        <TouchableOpacity
+          onPress={onUploadFromGallery}
+          disabled={updatingProfileVideo || uploading}
+          style={{
+            marginTop: 12,
+            backgroundColor: "rgba(255,255,255,0.05)",
+            borderWidth: 1,
+            borderColor: "#8FAEA2",
+            borderRadius: 12,
+            padding: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            opacity: updatingProfileVideo || uploading ? 0.6 : 1,
+          }}
+        >
+          <Ionicons name="images-outline" size={20} color="#8FAEA2" />
+          <Text
+            style={{
+              color: "#8FAEA2",
+              fontFamily: "Inter_500Medium",
+              fontSize: 14,
+            }}
+          >
+            Upload from Gallery
+          </Text>
+        </TouchableOpacity>
+      )}
+
       {profileVideoUrl ? (
         <Text
           style={{

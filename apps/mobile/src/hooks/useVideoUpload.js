@@ -164,11 +164,47 @@ export function useVideoUpload() {
     }
   };
 
+  // Upload profile video from gallery
+  const uploadProfileVideoFromGallery = async (cardId, setFormData) => {
+    try {
+      setUpdatingProfileVideo(true);
+      const url = await pickAndUploadVideo();
+      if (!url) return;
+
+      // If we have a cardId (edit screen), persist directly to the API
+      if (cardId) {
+        const res = await fetchWithAuth(`/api/cards/${cardId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profile_video_url: url }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(
+            data?.error || data?.message || "Failed to save profile video",
+          );
+        }
+        const savedUrl = data?.card?.profile_video_url || url;
+        setFormData((p) => ({ ...p, profile_video_url: savedUrl }));
+        Alert.alert("Profile video updated", "Your profile video was saved.");
+      } else {
+        // Fallback: just update local form state
+        setFormData((p) => ({ ...p, profile_video_url: url }));
+        Alert.alert("Profile video set", "Remember to Save Changes.");
+      }
+    } catch (e) {
+      Alert.alert("Error", e.message || "Failed to set profile video");
+    } finally {
+      setUpdatingProfileVideo(false);
+    }
+  };
+
   return {
     uploading,
     updatingProfileVideo,
     pickAndUploadVideo,
     uploadProfileVideo,
+    uploadProfileVideoFromGallery,
     recordAndUploadVideo,
   };
 }

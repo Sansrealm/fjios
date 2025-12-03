@@ -10,7 +10,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { useRouter } from "expo-router";
+import { useRouter, useNavigation } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/utils/auth/useAuth";
@@ -23,6 +23,7 @@ export default function SignInScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const fontsLoaded = useAppFonts();
   const { setAuth } = useAuth();
@@ -119,7 +120,8 @@ export default function SignInScreen() {
       // Store the JWT token
       setAuth({ jwt: data.token || data.jwt, user: data.user });
 
-      // Check if user has a card and navigate accordingly
+      // Reset navigation stack and navigate to tabs
+      // Using replace to prevent going back to signin screen
       try {
         const user = data.user;
         if (user?.id) {
@@ -128,23 +130,39 @@ export default function SignInScreen() {
             const cardsData = await cardsResponse.json();
             const hasCard = cardsData?.cards?.length > 0;
             
+            // Reset stack by replacing current route - prevents back navigation
             if (hasCard) {
-              router.replace("/(tabs)/cards");
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "(tabs)/cards" }],
+              });
             } else {
-              router.replace("/(tabs)/profile");
+              navigation.reset({
+                index: 0,
+                routes: [{ name: "(tabs)/profile" }],
+              });
             }
           } else {
             // If cards fetch fails, default to profile tab
-            router.replace("/(tabs)/profile");
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "(tabs)/profile" }],
+            });
           }
         } else {
           // If no user ID, default to profile tab
-          router.replace("/(tabs)/profile");
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "(tabs)/profile" }],
+          });
         }
       } catch (error) {
         console.error("Error checking user cards:", error);
         // If error checking cards, default to profile tab
-        router.replace("/(tabs)/profile");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "(tabs)/profile" }],
+        });
       }
     } catch (error) {
       console.error("Sign in error:", error);

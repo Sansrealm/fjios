@@ -16,9 +16,10 @@ export function useCard(id) {
   const { data: cardData, isLoading } = useQuery({
     queryKey: ["card", id],
     queryFn: async () => {
-      const response = await fetch(`/api/cards/${id}`);
+      const response = await fetchWithAuth(`/api/cards/${id}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch card");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.error || "Failed to fetch card");
       }
       return response.json();
     },
@@ -28,7 +29,7 @@ export function useCard(id) {
   const { data: savedStatus } = useQuery({
     queryKey: ["saved-card", id],
     queryFn: async () => {
-      const response = await fetch(`/api/cards/${id}/saved`);
+      const response = await fetchWithAuth(`/api/cards/${id}/saved`);
       if (!response.ok) {
         return { is_saved: false };
       }
@@ -40,9 +41,10 @@ export function useCard(id) {
   const saveCardMutation = useMutation({
     mutationFn: async () => {
       const method = savedStatus?.is_saved ? "DELETE" : "POST";
-      const response = await fetch(`/api/cards/${id}/saved`, { method });
+      const response = await fetchWithAuth(`/api/cards/${id}/saved`, { method });
       if (!response.ok) {
-        throw new Error("Failed to update saved status");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.error || "Failed to update saved status");
       }
       return response.json();
     },

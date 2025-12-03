@@ -30,7 +30,7 @@ router.post('/reset-password', resetPassword);
 router.post('/change-password', changePassword);
 router.delete('/delete-account', deleteAccount);
 router.get('/expo-web-success', expoWebSuccess);
-router.get('/milestones', milestones);
+router.post('/milestones', milestones);
 router.get('/milestones/:userId', milestonesByUserId);
 
 export default router;

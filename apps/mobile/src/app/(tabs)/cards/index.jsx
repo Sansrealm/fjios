@@ -31,6 +31,7 @@ import { useCardAnimation } from "@/hooks/useCardAnimation";
 import { fetchWithAuth } from "@/utils/api";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCardCompletion } from "@/hooks/useCardCompletion";
+import { usePreventAuthBack } from "@/hooks/usePreventAuthBack";
 
 function DigitalCard({ card, onPress, onSave, isAuthenticated }) {
   const handleShare = async () => {
@@ -429,6 +430,9 @@ export default function CardsScreen() {
   const { user } = useUser();
   const insets = useSafeAreaInsets();
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+
+  // Prevent hardware back button from navigating back to auth screens
+  usePreventAuthBack();
 
   // Hook card vertical scroll to header for subtle effects.
   // Use a plain callback instead of Animated.event so ScrollView receives a real function.

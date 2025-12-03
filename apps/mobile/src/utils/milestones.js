@@ -11,14 +11,23 @@ export const MILESTONES = {
 // Check if a milestone has been completed
 export const checkMilestone = async (userId, milestone) => {
   try {
-    const response = await fetchWithAuth(`/api/auth/milestones/${userId}`);
-    if (!response.ok) return false;
+    if (!userId || !milestone) {
+      console.warn('checkMilestone: Missing userId or milestone', { userId, milestone });
+      return false;
+    }
     
-    const data = await response.json();
+    const response = await fetchWithAuth(`/api/auth/milestones/${userId}`);
+    if (!response.ok) {
+      console.warn('checkMilestone: API response not ok', { status: response.status });
+      return false;
+    }
+    
+    const data = await response.json().catch(() => ({}));
     const flags = data.milestoneFlags || {};
     return flags[milestone] === true;
   } catch (error) {
     console.error('Error checking milestone:', error);
+    // Return false on error - assume milestone not completed
     return false;
   }
 };
@@ -26,6 +35,12 @@ export const checkMilestone = async (userId, milestone) => {
 // Update a milestone flag
 export const updateMilestone = async (userId, milestone) => {
   try {
+    if (!userId || !milestone) {
+      const error = new Error('Missing userId or milestone');
+      console.error('updateMilestone:', error.message, { userId, milestone });
+      throw error;
+    }
+    
     const response = await fetchWithAuth('/api/auth/milestones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -33,12 +48,16 @@ export const updateMilestone = async (userId, milestone) => {
     });
     
     if (!response.ok) {
-      throw new Error('Failed to update milestone');
+      const errorText = await response.text().catch(() => 'Unknown error');
+      const error = new Error(`Failed to update milestone: ${response.status} ${errorText}`);
+      console.error('updateMilestone: API error', { status: response.status, errorText });
+      throw error;
     }
     
-    return await response.json();
+    return await response.json().catch(() => ({}));
   } catch (error) {
     console.error('Error updating milestone:', error);
+    // Re-throw so caller can handle it
     throw error;
   }
 };

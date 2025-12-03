@@ -33,33 +33,59 @@ export function useCreateCard(user) {
     },
     retry: false,
     onSuccess: async (data) => {
+      // Invalidate queries first to ensure UI updates
       queryClient.invalidateQueries(['cards']);
       queryClient.invalidateQueries(['user-cards']);
 
-      if (user?.id) {
-        try {
-          const alreadyCompleted = await checkMilestone(
-            user.id,
-            MILESTONES.CARD_CREATED,
-          );
-          if (!alreadyCompleted) {
-            await updateMilestone(user.id, MILESTONES.CARD_CREATED);
-            await Haptics.notificationAsync(
-              Haptics.NotificationFeedbackType.Success,
-            );
-            setShowConfetti(true);
-          }
-        } catch (error) {
-          console.error('Error handling card creation milestone:', error);
-        }
+      // Ensure we have a valid card ID
+      const cardId = data?.card?.id;
+      if (!cardId) {
+        console.error('Card creation response missing card ID:', data);
+        Alert.alert('Error', 'Card created but ID not found. Please refresh.');
+        return;
       }
 
+      // Show success alert immediately - don't wait for milestone
       Alert.alert('Success', 'Your digital card has been created!', [
         {
           text: 'View Card',
-          onPress: () => router.replace(`/card/${data.card.id}`),
+          onPress: () => {
+            console.log('Navigating to card:', cardId);
+            router.replace(`/card/${cardId}`);
+          },
         },
       ]);
+
+      // Handle milestone update asynchronously - don't let it block success flow
+      if (user?.id) {
+        // Fire and forget - handle milestone in background
+        (async () => {
+          try {
+            const alreadyCompleted = await checkMilestone(
+              user.id,
+              MILESTONES.CARD_CREATED,
+            );
+            if (!alreadyCompleted) {
+              await updateMilestone(user.id, MILESTONES.CARD_CREATED);
+              await Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+              );
+              setShowConfetti(true);
+            } else {
+              // Still show confetti if milestone already completed
+              setShowConfetti(true);
+            }
+          } catch (error) {
+            // Log error but don't throw - milestone failure shouldn't break card creation
+            console.error('Error handling card creation milestone:', error);
+            // Still show confetti even if milestone fails
+            setShowConfetti(true);
+          }
+        })();
+      } else {
+        // Show confetti even if no user ID (shouldn't happen, but be safe)
+        setShowConfetti(true);
+      }
     },
     onError: (error) => {
       Alert.alert('Error', `${error.message}`);
