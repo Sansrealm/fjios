@@ -28,7 +28,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCardAnimation } from "@/hooks/useCardAnimation";
 import { fetchWithAuth } from "@/utils/api";
 import { useCardCompletion } from "@/hooks/useCardCompletion";
-import { usePreventAuthBack } from "@/hooks/usePreventAuthBack";
 
 function UserCardItem({ card, onPress }) {
   return (
@@ -102,9 +101,6 @@ export default function ProfileScreen() {
   const { data: user } = useUser();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
-
-  // Prevent hardware back button from navigating back to auth screens
-  usePreventAuthBack();
 
   // Fetch user's cards
   const {

@@ -11,7 +11,6 @@ import { useLocationPicker } from '@/hooks/useLocationPicker';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
 import { SignInRequired } from '@/components/CreateCard/SignInRequired';
 import { CreateCardForm } from '@/components/CreateCard/CreateCardForm';
-import { usePreventAuthBack } from '@/hooks/usePreventAuthBack';
 
 export default function CreateCardScreen() {
   const router = useRouter();
@@ -31,9 +30,6 @@ export default function CreateCardScreen() {
     uploadProfileVideo,
     uploadProfileVideoFromGallery,
   } = useVideoUpload();
-
-  // Prevent hardware back button from navigating back to auth screens
-  usePreventAuthBack();
 
   const { handleUseMyLocation } = useLocationPicker(setLocation);
 

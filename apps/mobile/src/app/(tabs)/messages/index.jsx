@@ -22,7 +22,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchWithAuth } from "@/utils/api"; // ADD: ensure Bearer token is sent
 // ADD: swipe-to-clear support
 import { Swipeable } from "react-native-gesture-handler";
-import { usePreventAuthBack } from "@/hooks/usePreventAuthBack";
 
 function MessageCard({ message, onMarkAsRead, onOpenEmail, onClear }) {
   const formatDate = (dateString) => {
@@ -210,9 +209,6 @@ export default function MessagesScreen() {
   const { isReady, isAuthenticated } = useAuth();
   const { data: user } = useUser();
   const queryClient = useQueryClient();
-
-  // Prevent hardware back button from navigating back to auth screens
-  usePreventAuthBack();
 
   // Invalidate unread count when screen is focused
   useFocusEffect(
