@@ -10,7 +10,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { useRouter, useNavigation } from "expo-router";
+import { useRouter } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "@/utils/auth/useAuth";
@@ -23,7 +23,6 @@ export default function SignInScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const fontsLoaded = useAppFonts();
   const { setAuth } = useAuth();
@@ -132,37 +131,22 @@ export default function SignInScreen() {
             
             // Reset stack by replacing current route - prevents back navigation
             if (hasCard) {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "(tabs)/cards" }],
-              });
+              router.replace("/(tabs)/cards");
             } else {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "(tabs)/profile" }],
-              });
+              router.replace("/(tabs)/profile");
             }
           } else {
             // If cards fetch fails, default to profile tab
-            navigation.reset({
-              index: 0,
-              routes: [{ name: "(tabs)/profile" }],
-            });
+            router.replace("/(tabs)/profile");
           }
         } else {
           // If no user ID, default to profile tab
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "(tabs)/profile" }],
-          });
+          router.replace("/(tabs)/profile");
         }
       } catch (error) {
         console.error("Error checking user cards:", error);
         // If error checking cards, default to profile tab
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "(tabs)/profile" }],
-        });
+        router.replace("/(tabs)/profile");
       }
     } catch (error) {
       console.error("Sign in error:", error);
