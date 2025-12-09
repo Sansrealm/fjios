@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import multer from 'multer';
 import { getSession } from '../../middleware/auth.js';
 import upload from '../../utils/upload.js';
-import { uploadVideoBuffer } from '../../utils/cloudinary.js';
+import { uploadVideoBuffer, validateCloudinaryConfig } from '../../utils/cloudinary.js';
 
 const router = express.Router();
 
@@ -65,6 +65,19 @@ router.get('/public-key', (req, res) => {
     return res.status(500).json({ error: 'Uploadcare not configured' });
   }
   return res.json({ publicKey });
+});
+
+// Diagnostic endpoint to check Cloudinary configuration
+router.get('/cloudinary/status', async (req, res) => {
+  try {
+    const validation = await validateCloudinaryConfig();
+    return res.json(validation);
+  } catch (error) {
+    return res.status(500).json({
+      valid: false,
+      error: error.message,
+    });
+  }
 });
 
 router.post(
@@ -181,9 +194,42 @@ router.post(
         return res.status(400).json({ error: "Invalid request. Provide 'video' file field." });
       }
 
+      // Validate file type
+      const allowedMimeTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+      const mimeType = req.file.mimetype?.toLowerCase();
+      if (mimeType && !allowedMimeTypes.some(type => mimeType.includes(type))) {
+        console.warn('[Upload] Unsupported video format:', mimeType);
+        // Still try to upload, but log warning
+      }
+
+      console.log('[Upload] Starting video upload to Cloudinary', {
+        userId: session.user.id,
+        fileName: req.file.originalname,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+      });
+
+      // Pre-upload validation: Check Cloudinary config before attempting upload
+      // This helps catch credential issues early
+      const configCheck = await validateCloudinaryConfig().catch(() => ({
+        valid: false,
+        issues: ['Unable to validate Cloudinary configuration'],
+      }));
+      
+      if (!configCheck.valid) {
+        console.error('[Upload] Cloudinary configuration check failed:', configCheck);
+        return res.status(500).json({
+          error: 'Cloudinary configuration error. Please check server logs.',
+          details: configCheck.issues || ['Unknown configuration error'],
+          retryable: false,
+        });
+      }
+
       const result = await uploadVideoBuffer({
         buffer: req.file.buffer,
         fileName: req.file.originalname,
+        maxRetries: 3,
+        initialDelay: 1000,
       });
 
       console.log('[Upload] Video stored in Cloudinary', {
@@ -204,9 +250,34 @@ router.post(
         format: result.format,
       });
     } catch (error) {
-      console.error('[Upload] Cloudinary video upload error:', error);
-      return res.status(error.status || 500).json({
-        error: error.message || 'Video upload failed',
+      const status = error.status || error.http_code || 500;
+      const errorMessage = error.message || 'Video upload failed';
+      
+      console.error('[Upload] Cloudinary video upload error:', {
+        status,
+        message: errorMessage,
+        http_code: error.http_code,
+        originalError: error.originalError?.message || error.message,
+        userId: req.session?.user?.id || session?.user?.id,
+        cloudinaryError: error.cloudinaryError || error.originalError,
+        fileName: req.file?.originalname,
+        fileSize: req.file?.size,
+        mimeType: req.file?.mimetype,
+      });
+
+      // Provide more helpful error messages
+      let userMessage = errorMessage;
+      if (status === 403) {
+        userMessage = 'Upload failed: Access denied. This may be due to rate limiting. Please try again in a moment.';
+      } else if (status === 429) {
+        userMessage = 'Upload failed: Too many requests. Please wait a moment and try again.';
+      } else if (status >= 500) {
+        userMessage = 'Upload failed: Server error. Please try again in a moment.';
+      }
+
+      return res.status(status).json({
+        error: userMessage,
+        retryable: status === 403 || status === 429 || (status >= 500 && status < 600),
       });
     }
   },

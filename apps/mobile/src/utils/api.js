@@ -133,11 +133,36 @@ export const fetchWithAuth = async (url, options = {}) => {
 };
 
 /**
+ * Sleep utility for retry delays
+ */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Check if an error response is retryable
+ */
+const isRetryableStatus = (status, data) => {
+  // Retry on 403, 429, and 5xx errors
+  if (status === 403 || status === 429 || (status >= 500 && status < 600)) {
+    return true;
+  }
+  // Also check if server explicitly says it's retryable
+  return data?.retryable === true;
+};
+
+/**
  * Upload a video file (e.g., camera recording) to Cloudinary via the backend
  * Expects an object with at least a `uri` pointing to the local video file.
  * Returns the parsed JSON from the server, including the video URL.
+ * 
+ * @param {Object} video - Video object with uri, name, type properties
+ * @param {Object} options - Upload options
+ * @param {number} options.maxRetries - Maximum number of retries (default: 3)
+ * @param {number} options.initialDelay - Initial delay in ms (default: 1000)
+ * @returns {Promise<Object>} Upload result with url, publicId, duration, etc.
  */
-export const uploadVideoToCloudinary = async (video) => {
+export const uploadVideoToCloudinary = async (video, options = {}) => {
+  const { maxRetries = 3, initialDelay = 1000 } = options;
+  
   const uri = video?.file?.uri || video?.uri;
   if (!uri) {
     throw new Error("Upload failed: missing video URI.");
@@ -148,31 +173,82 @@ export const uploadVideoToCloudinary = async (video) => {
   const type =
     video?.mimeType || video?.type || "video/mp4";
 
-  const formData = new FormData();
-  formData.append(
-    "video",
-    {
-      uri,
-      name,
-      type,
-    },
-  );
+  let lastError;
+  let attempt = 0;
 
-  const response = await fetchWithAuth("/api/upload/video", {
-    method: "POST",
-    body: formData,
-  });
+  while (attempt <= maxRetries) {
+    try {
+      const formData = new FormData();
+      formData.append(
+        "video",
+        {
+          uri,
+          name,
+          type,
+        },
+      );
 
-  const data = await response.json().catch(() => ({}));
+      console.log(`[Upload] Attempting video upload (attempt ${attempt + 1}/${maxRetries + 1})`);
 
-  if (!response.ok) {
-    throw new Error(
-      data?.error || `Video upload failed with status ${response.status}`,
-    );
+      const response = await fetchWithAuth("/api/upload/video", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const error = new Error(
+          data?.error || `Video upload failed with status ${response.status}`,
+        );
+        error.status = response.status;
+        error.data = data;
+
+        // If not retryable or last attempt, throw
+        if (attempt >= maxRetries || !isRetryableStatus(response.status, data)) {
+          throw error;
+        }
+
+        lastError = error;
+        const delay = initialDelay * Math.pow(2, attempt);
+        console.log(
+          `[Upload] Upload failed with status ${response.status}, retrying in ${delay}ms`
+        );
+        await sleep(delay);
+        attempt++;
+        continue;
+      }
+
+      // Success
+      if (attempt > 0) {
+        console.log(`[Upload] Video upload succeeded after ${attempt} retry(ies)`);
+      }
+
+      // data includes: { url, publicId, duration, resourceType, format }
+      return data;
+    } catch (error) {
+      // Network errors or non-retryable errors
+      if (error.status && !isRetryableStatus(error.status, error.data)) {
+        throw error;
+      }
+
+      // If network error and we have retries left, retry
+      if (!error.status && attempt < maxRetries) {
+        lastError = error;
+        const delay = initialDelay * Math.pow(2, attempt);
+        console.log(`[Upload] Network error, retrying in ${delay}ms`);
+        await sleep(delay);
+        attempt++;
+        continue;
+      }
+
+      // Last attempt or non-retryable error
+      throw error;
+    }
   }
 
-  // data includes: { url, publicId, duration, resourceType, format }
-  return data;
+  // Should never reach here, but just in case
+  throw lastError || new Error("Video upload failed after retries");
 };
 
 /**

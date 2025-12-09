@@ -6,8 +6,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+
+// Increase timeout for upload routes (configurable, default: 10 minutes for large video uploads)
+const UPLOAD_TIMEOUT = Number(process.env.UPLOAD_ROUTE_TIMEOUT) || 600000; // 10 minutes default
+app.use('/api/upload', (req, res, next) => {
+  req.setTimeout(UPLOAD_TIMEOUT);
+  res.setTimeout(UPLOAD_TIMEOUT);
+  next();
+});
 
 // CORS configuration
 // In development, allow all origins for mobile app testing
@@ -47,6 +55,9 @@ import savedCardsRoutes from './routes/saved-cards/index.js';
 import systemSettingsRoutes from './routes/system-settings/index.js';
 import uploadRoutes from './routes/upload/index.js';
 
+// Validate Cloudinary configuration on startup
+import { validateCloudinaryConfig } from './utils/cloudinary.js';
+
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/cards', cardsRoutes);
@@ -83,6 +94,28 @@ export default app;
 // Only start server if not in Vercel environment
 // Vercel sets VERCEL environment variable
 if (!process.env.VERCEL) {
+  // Validate Cloudinary config on startup (non-blocking)
+  validateCloudinaryConfig()
+    .then((result) => {
+      if (result.valid) {
+        console.log('✅ Cloudinary configuration is valid');
+        if (result.warnings && result.warnings.length > 0) {
+          console.warn('⚠️  Cloudinary warnings:', result.warnings);
+        }
+      } else {
+        console.error('❌ Cloudinary configuration error:');
+        console.error('   Issues:', result.issues);
+        if (result.warnings && result.warnings.length > 0) {
+          console.warn('   Warnings:', result.warnings);
+        }
+        console.error('   Video uploads will fail until this is fixed.');
+        console.error('   Check your .env file for CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET');
+      }
+    })
+    .catch((error) => {
+      console.error('❌ Error validating Cloudinary config:', error.message);
+    });
+
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
