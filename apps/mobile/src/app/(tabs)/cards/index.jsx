@@ -296,15 +296,19 @@ function DigitalCard({ card, onPress, onSave, isAuthenticated }) {
   );
 }
 
-function DetailedCardPagerItem({ card, isAuthenticated, cardHeight, itemWidth, onScroll }) {
+function DetailedCardPagerItem({ card, isAuthenticated, cardHeight, itemWidth, onScroll, isActive = false }) {
   const { currentAsk, handleFlipToAsk, handleFlipToFront, frontAnimatedStyle, backAnimatedStyle, isFlipped } =
     useCardAnimation();
   const [messageOpen, setMessageOpen] = useState(false);
+  const [messageAsk, setMessageAsk] = useState(null);
   const [sending, setSending] = useState(false);
   const isOwner = false; // discovery view shows other users' cards only
   const { isComplete } = useCardCompletion();
 
-  const handleMessagePress = () => setMessageOpen(true);
+  const handleMessagePress = (ask) => {
+    setMessageAsk(ask || null);
+    setMessageOpen(true);
+  };
   const handleSendMessage = async ({ ask_id, message }) => {
     // Validate card completion before sending (only for authenticated users)
     if (isAuthenticated && !isComplete) {
@@ -379,6 +383,7 @@ function DetailedCardPagerItem({ card, isAuthenticated, cardHeight, itemWidth, o
             isOwner={isOwner}
             onScroll={onScroll}
             onShare={handleShare}
+            isActive={isActive && !isFlipped}
           />
         </Reanimated.View>
         <Reanimated.View
@@ -407,11 +412,15 @@ function DetailedCardPagerItem({ card, isAuthenticated, cardHeight, itemWidth, o
       </View>
       <MessageModal
         visible={messageOpen}
-        onClose={() => setMessageOpen(false)}
+        onClose={() => {
+          setMessageOpen(false);
+          setMessageAsk(null);
+        }}
         asks={card.asks || []}
         onSendMessage={handleSendMessage}
         loading={sending}
         isAuthenticated={isAuthenticated}
+        preselectedAsk={messageAsk}
       />
     </View>
   );
@@ -422,6 +431,7 @@ export default function CardsScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
   const router = useRouter();
   const fontsLoaded = useAppFonts();
   const { isReady, isAuthenticated } = useAuth();
@@ -567,6 +577,13 @@ export default function CardsScreen() {
 
   const showCompactList = isSearchOpen && searchQuery.trim().length > 0;
 
+  // Handle horizontal scroll to track active card
+  const handleHorizontalScroll = useCallback((event) => {
+    const offsetX = event?.nativeEvent?.contentOffset?.x ?? 0;
+    const index = Math.round(offsetX / windowWidth);
+    setActiveCardIndex(index);
+  }, [windowWidth]);
+
   return (
     <AppScreen
       backgroundVariant="default"
@@ -649,13 +666,14 @@ export default function CardsScreen() {
           <FlatList
             data={visibleCards}
             keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <DetailedCardPagerItem
                 card={item}
                 isAuthenticated={isAuthenticated}
                 cardHeight={cardHeight}
                 itemWidth={windowWidth}
                 onScroll={handleCardScroll}
+                isActive={activeCardIndex === index}
               />
             )}
             horizontal
@@ -669,6 +687,9 @@ export default function CardsScreen() {
             snapToInterval={windowWidth}
             decelerationRate="fast"
             getItemLayout={(_, index) => ({ length: windowWidth, offset: windowWidth * index, index })}
+            onMomentumScrollEnd={handleHorizontalScroll}
+            onScroll={handleHorizontalScroll}
+            scrollEventThrottle={16}
           />
         )
       ) : (

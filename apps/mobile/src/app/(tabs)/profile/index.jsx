@@ -403,6 +403,8 @@ export default function ProfileScreen() {
                 onEdit={() => router.push(`/card/${String(firstCard.id)}/edit`)}
                 // NEW: share icon inline next to the name
                 onShare={handleShareCard}
+                // NEW: always active since this is a single card view (not carousel)
+                isActive={true}
               />
             </Reanimated.View>
 

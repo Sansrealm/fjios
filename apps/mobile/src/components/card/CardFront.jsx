@@ -60,6 +60,8 @@ export default function CardFront({
   onShare,
   // NEW: optional onScroll to drive header effects
   onScroll,
+  // NEW: indicates if this card is the active slide in the carousel
+  isActive = true,
 }) {
   // Precompute ask items with display titles to avoid complex JSX expressions
   const displayedAsks = useMemo(() => {
@@ -98,7 +100,7 @@ export default function CardFront({
   }, [card?.location_city, card?.location_state, card?.location_country]);
 
   // Move profile video player into a child so hooks aren't called when URL is missing
-  const ProfileVideo = ({ url, paused }) => {
+  const ProfileVideo = ({ url, paused, isActive: videoIsActive }) => {
     const isScreenFocused = useIsFocused();
     const [appState, setAppState] = useState(AppState.currentState);
     const [isLoading, setIsLoading] = useState(true);
@@ -107,7 +109,8 @@ export default function CardFront({
     const normalizedUrl = useMemo(() => normalizeVideoUrl(url), [url]);
     const player = useVideoPlayer(normalizedUrl, (p) => {
       p.loop = false; // play once
-      p.muted = false;
+      // Only unmute if this is the active slide, otherwise mute to prevent multiple sounds
+      p.muted = !videoIsActive;
     });
 
     // Track app foreground/background
@@ -123,20 +126,30 @@ export default function CardFront({
         !hasAutoPlayed &&
         isScreenFocused &&
         appState === "active" &&
-        !paused
+        !paused &&
+        videoIsActive
       ) {
         setPlayRequested(true);
         setHasAutoPlayed(true);
       }
-    }, [normalizedUrl, hasAutoPlayed, isScreenFocused, appState, paused]);
+    }, [normalizedUrl, hasAutoPlayed, isScreenFocused, appState, paused, videoIsActive]);
 
-    // Enforce strict focus-based playback
+    // Update mute state when active status changes
+    useEffect(() => {
+      if (!normalizedUrl) return;
+      try {
+        player.muted = !videoIsActive;
+      } catch (e) {}
+    }, [videoIsActive, normalizedUrl, player]);
+
+    // Enforce strict focus-based playback - only play if active slide
     const shouldPlay =
       playRequested &&
       isScreenFocused &&
       appState === "active" &&
       !paused &&
-      !isLoading;
+      !isLoading &&
+      videoIsActive;
     useEffect(() => {
       if (!normalizedUrl) return;
       try {
@@ -245,7 +258,7 @@ export default function CardFront({
       >
         {/* Profile Video at top inside the same scroll layer */}
         {card.profile_video_url ? (
-          <ProfileVideo url={card.profile_video_url} paused={pauseVideo} />
+          <ProfileVideo url={card.profile_video_url} paused={pauseVideo} isActive={isActive} />
         ) : null}
 
         {/* Content Section (no separate layer) */}

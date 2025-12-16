@@ -48,17 +48,20 @@ export default function CardDetailScreen() {
   } = useCardAnimation();
 
   const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageAsk, setMessageAsk] = useState(null);
 
   useEffect(() => {
     if (sendMessageMutation.isSuccess) {
       setShowMessageModal(false);
+      setMessageAsk(null);
       if (flipRotation.value !== 0) {
         handleFlipToFront();
       }
     }
   }, [sendMessageMutation.isSuccess, handleFlipToFront, flipRotation.value]);
 
-  const handleMessagePress = () => {
+  const handleMessagePress = (ask) => {
+    setMessageAsk(ask || null);
     setShowMessageModal(true);
   };
 
@@ -136,6 +139,8 @@ export default function CardDetailScreen() {
                 pauseVideo={isFlipped} // strictly pause front video when back is shown
                 // REMOVE: onAddAsk (owner adds/edits asks from the edit screen)
                 // onAddAsk={() => router.push(`/card/${card.id}/edit`)}
+                // NEW: always active since this is a single card view (not carousel)
+                isActive={true}
               />
             </Animated.View>
 
@@ -171,11 +176,15 @@ export default function CardDetailScreen() {
 
         <MessageModal
           visible={showMessageModal}
-          onClose={() => setShowMessageModal(false)}
+          onClose={() => {
+            setShowMessageModal(false);
+            setMessageAsk(null);
+          }}
           asks={card.asks}
           onSendMessage={(data) => sendMessageMutation.mutate(data)}
           loading={sendMessageMutation.isPending}
           isAuthenticated={isAuthenticated}
+          preselectedAsk={messageAsk}
         />
       </View>
     </KeyboardAvoidingAnimatedView>

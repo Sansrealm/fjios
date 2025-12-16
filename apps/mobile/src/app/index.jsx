@@ -40,7 +40,12 @@ export default function Index() {
   }, []);
 
   // Run logo animation, then type text, then navigate
+  // Wait for fonts to load before starting animation to prevent text corruption
   useEffect(() => {
+    if (!fontsLoaded) {
+      return; // Don't start animation until fonts are loaded
+    }
+
     Animated.parallel([
       Animated.timing(logoOpacity, {
         toValue: 1,
@@ -102,11 +107,13 @@ export default function Index() {
       });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, isAuthenticated, auth]);
+  }, [router, isAuthenticated, auth, fontsLoaded]);
 
   const startTyping = (onDone) => {
     setTypedText("");
-    const chars = FULL_TEXT.split("");
+    // Use a more reliable method to split the string
+    // Convert to array using spread operator which handles Unicode better
+    const chars = [...FULL_TEXT];
     let i = 0;
 
     const typeNext = () => {
@@ -116,12 +123,16 @@ export default function Index() {
       }
 
       const ch = chars[i];
-      if (typeof ch === "undefined") {
+      if (!ch || ch === undefined || ch === null) {
         onDone?.();
         return;
       }
 
-      setTypedText((prev) => prev + ch);
+      // Build string incrementally
+      setTypedText((prev) => {
+        const next = prev + String(ch);
+        return next;
+      });
 
       // Base speed for normal characters
       let delay = 28;
@@ -184,10 +195,15 @@ export default function Index() {
               color: "#8FAEA2",
               fontFamily: fontsLoaded ? "Inter_500Medium" : undefined,
               fontSize: 16,
-              textAlign: "center", // center text to align with the logo above
+              textAlign: "center",
+              letterSpacing: 0.3,
+              fontWeight: "500",
             }}
+            numberOfLines={2}
+            adjustsFontSizeToFit={false}
+            allowFontScaling={true}
           >
-            {typedText}
+            {typedText || ""}
           </Text>
         </View>
       </View>
